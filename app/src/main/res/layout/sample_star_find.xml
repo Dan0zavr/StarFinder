@@ -1,16 +1,118 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"/>
+    android:layout_height="match_parent">
 
-<androidx.camera.view.PreviewView
-android:id="@+id/previewView"
-android:layout_width="match_parent"
-android:layout_height="match_parent"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-<com.example.StarFinder.OverlayView
-android:id="@+id/overlayView"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:background="@android:color/transparent"/>
+        <!-- Камера -->
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3" />
+
+        <!-- Информационный блок -->
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="16dp"
+            android:background="#111827"
+            android:stretchColumns="*">
+
+            <!-- Земные координаты -->
+            <TableRow>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Координаты"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="4dp" />
+
+                <TextView
+                    android:id="@+id/width"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Широта: ..."
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="4dp" />
+
+                <TextView
+                    android:id="@+id/longitude"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Долгота: ..."
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="4dp" />
+            </TableRow>
+
+            <!-- Небесные координаты -->
+            <TableRow>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Небо"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="4dp" />
+
+                <TextView
+                    android:id="@+id/azimut"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Азимут: ..."
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="4dp" />
+
+                <TextView
+                    android:id="@+id/nakl"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Высота: ..."
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="4dp" />
+            </TableRow>
+
+            <!-- Инфо о звезде -->
+            <TableRow>
+                <TextView
+                    android:id="@+id/starInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_span="3"
+                    android:text="Ищем: Полярная звезда"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="@drawable/border_cell"
+                    android:padding="8dp" />
+            </TableRow>
+
+        </TableLayout>
+
+    </LinearLayout>
+</FrameLayout>
+
+
 

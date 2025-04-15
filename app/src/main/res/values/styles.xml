@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="Widget.Theme.StarFinder.MyView" parent="">
+    <style name="Widget.Theme.StarFinder.MyView" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:background">@color/gray_400</item>
         <item name="exampleColor">@color/light_blue_400</item>
     </style>
