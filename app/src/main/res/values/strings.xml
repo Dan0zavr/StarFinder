@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">StarFinder</string>
+    <string name="app_name" translatable="false">StarFinder</string>
+    <string name="open_drawer">Открыть меню</string>
+    <string name="close_drawer">Закрыть меню</string>
 </resources>

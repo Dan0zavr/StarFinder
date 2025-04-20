@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.example.starfinder"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -61,4 +61,7 @@ dependencies {
     implementation(libs.play.services.location)
 
     implementation ("com.jakewharton.threetenabp:threetenabp:1.4.6")
+    implementation ("com.google.android.material:material:1.12.0")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation ("com.google.android.material:material:1.11.0")
 }
