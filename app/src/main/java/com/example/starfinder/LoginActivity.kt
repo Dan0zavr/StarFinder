@@ -38,7 +38,7 @@ class LoginActivity : AppCompatActivity() {
                 editor.apply()
 
                 // Переходим на экран планирования
-                startActivity(Intent(this, PlanningActivity::class.java))
+                startActivity(Intent(this, ObservationPlanningActivity::class.java))
                 finish() // Закрываем окно входа
             } else {
                 Toast.makeText(this, "Неверный email или пароль", Toast.LENGTH_SHORT).show()

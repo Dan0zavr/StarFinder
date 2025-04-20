@@ -13,14 +13,13 @@ import com.google.android.material.navigation.NavigationView
 open class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Загружаем основной макет с Drawer и Toolbar
         setContentView(R.layout.activity_base)
 
         // Настройка Toolbar
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        // Настройка DrawerToggle
+        // Настройка кнопки "бургер" для открытия меню
         val drawerLayout: DrawerLayout = findViewById(R.id.drawerLayout)
         val toggle = ActionBarDrawerToggle(
             this, drawerLayout, toolbar,
@@ -29,17 +28,43 @@ open class BaseActivity : AppCompatActivity() {
         drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
 
-        // Обработка NavigationView
-        findViewById<NavigationView>(R.id.navigationView)
-            .setNavigationItemSelectedListener { item ->
-                Toast.makeText(this, "Clicked: ${item.title}", Toast.LENGTH_SHORT).show()
-                when (item.itemId) {
-                    R.id.observe  -> startActivity(Intent(this, MainActivity::class.java))
-                    R.id.planning -> startActivity(Intent(this, ObservationPlanningActivity::class.java))
-                    R.id.history  -> startActivity(Intent(this, ObservationHistoryActivity::class.java))
+        // Обработка кликов по пунктам меню
+        findViewById<NavigationView>(R.id.navigationView).setNavigationItemSelectedListener { item ->
+            drawerLayout.closeDrawer(GravityCompat.START)
+
+            when (item.itemId) {
+                R.id.observe -> {
+                    if (this !is MainActivity) {
+                        startActivity(Intent(this, MainActivity::class.java))
+                        finish()
+                    }
+                    true
                 }
-                drawerLayout.closeDrawer(GravityCompat.START)
-                true
+                R.id.planning -> {
+                    if (this !is ObservationPlanningActivity) {
+                        startActivity(Intent(this, ObservationPlanningActivity::class.java))
+                        finish()
+                    }
+                    true
+                }
+                R.id.history -> {                    if (this !is ObservationHistoryActivity) {
+                        startActivity(Intent(this, ObservationHistoryActivity::class.java))
+                        finish()
+                    }
+                    true
+                }
+//                R.id.logout -> {
+//                    // Выход из аккаунта
+//                    getSharedPreferences("UserPrefs", MODE_PRIVATE).edit {
+//                        putBoolean("isLoggedIn", false)
+//                        apply()
+//                    }
+//                    startActivity(Intent(this, LoginActivity::class.java))
+//                    finishAffinity() // Закрываем все активности
+//                    true
+//                }
+                else -> false
             }
+        }
     }
 }
