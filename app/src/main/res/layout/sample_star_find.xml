@@ -3,25 +3,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Камера (PreviewView) -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Наложение на камеру (OverlayView) -->
+    <com.example.starfinder.OverlayView
+        android:id="@+id/overlayView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Информационный блок внизу -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:background="#111827"
+        android:padding="16dp">
 
-        <!-- Камера -->
-        <androidx.camera.view.PreviewView
-            android:id="@+id/previewView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="3" />
-
-        <!-- Информационный блок -->
         <TableLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:padding="16dp"
-            android:background="#111827"
+            android:layout_height="wrap_content"
             android:stretchColumns="*">
 
             <!-- Земные координаты -->
@@ -110,9 +115,6 @@
             </TableRow>
 
         </TableLayout>
-
     </LinearLayout>
+
 </FrameLayout>
-
-
-

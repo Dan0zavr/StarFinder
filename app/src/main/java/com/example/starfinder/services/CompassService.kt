@@ -49,4 +49,15 @@ class CompassService(context: Context) : SensorEventListener {
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Не используется сейчас
     }
+
+    fun calculateAzimuth(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
+        val phi1 = Math.toRadians(lat1)
+        val phi2 = Math.toRadians(lat2)
+        val deltaLambda = Math.toRadians(lon2 - lon1)
+
+        val y = Math.sin(deltaLambda) * Math.cos(phi2)
+        val x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda)
+        val azimuth = Math.atan2(y, x)
+        return Math.toDegrees(azimuth).toFloat()
+    }
 }

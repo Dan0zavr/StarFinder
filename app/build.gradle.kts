@@ -18,6 +18,8 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        aidl = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -36,6 +38,8 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
+
 }
 
 dependencies {
