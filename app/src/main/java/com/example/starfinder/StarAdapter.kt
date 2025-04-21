@@ -5,23 +5,37 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.BaseAdapter
 import android.widget.TextView
 import com.example.starfinder.models.StarInfo
 
-class StarAdapter(context: Context, stars: List<StarInfo>) : ArrayAdapter<StarInfo>(context, 0, stars) {
+class StarAdapter(
+    private val context: Context,
+    private val stars: List<StarInfo>
+) : BaseAdapter() {
+
+    private var itemClickListener: ((StarInfo) -> Unit)? = null
+
+    fun setOnItemClickListener(listener: (StarInfo) -> Unit) {
+        itemClickListener = listener
+    }
+
+    override fun getCount(): Int = stars.size
+
+    override fun getItem(position: Int): StarInfo = stars[position]
+
+    override fun getItemId(position: Int): Long = position.toLong()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val star = getItem(position)
-        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.star_list_item, parent, false)
+        val view = convertView ?: LayoutInflater.from(context)
+            .inflate(android.R.layout.simple_list_item_1, parent, false)
 
-        // Инициализация элементов в списке
-        val nameTextView = view.findViewById<TextView>(R.id.starName)
-        val coordinatesTextView = view.findViewById<TextView>(R.id.starCoordinates)
+        val star = stars[position]
+        view.findViewById<TextView>(android.R.id.text1).text = star.name
 
-
-        // Заполнение данными
-        nameTextView.text = star?.name
-        coordinatesTextView.text = "RA: ${star?.ra}, Dec: ${star?.dec}"
+        view.setOnClickListener {
+            itemClickListener?.invoke(star)
+        }
 
         return view
     }

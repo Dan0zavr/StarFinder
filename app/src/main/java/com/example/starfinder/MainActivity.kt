@@ -30,7 +30,7 @@ import java.util.Calendar
 import kotlin.math.abs
 
 class MainActivity : BaseActivity() {
-    private lateinit var arrowAnimator: ArrowAnimator
+
     private lateinit var viewModel: MainViewModel
     private lateinit var overlayView: OverlayView
 
@@ -52,7 +52,6 @@ class MainActivity : BaseActivity() {
         } else {
             initEverything()
         }
-        arrowAnimator = ArrowAnimator(findViewById(R.id.overlayView))
     }
 
     private fun initEverything() {
@@ -132,53 +131,61 @@ class MainActivity : BaseActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == STAR_SELECTION_REQUEST_CODE && resultCode == RESULT_OK) {
-            data?.let {
-                if (it.hasExtra("selected_star")) {
-                    val star = it.getParcelableExtra<CelestialBody>("selected_star")
-                    star?.let { viewModel.selectStar(it) }
-                }
-            }
+            val star = data?.getParcelableExtra<CelestialBody>("selected_star")
+            star?.let {
+                viewModel.selectStar(it)
+                findViewById<TextView>(R.id.starInfo).text = "Selected: ${it.celestialBodyName}"
+                Log.d("StarTransfer", "Received star: ${it.celestialBodyName}")
+            } ?: Log.e("StarTransfer", "Received null star")
         }
     }
 
     private fun updateArrowPosition() {
-        viewModel.selectedStar.value?.let { star ->
-            viewModel.location.value?.let { location ->
-                viewModel.azimuth.value?.let { currentAzimuth ->
-                    // Конвертируем координаты звезды
-                    val (starAzimuth, _) = AstronomicCalculations().equatorialToHorizontal(
-                        star.ascension.toDouble(),
-                        star.deflection.toDouble(),
-                        location.latitude,
-                        location.longitude,
-                        Calendar.getInstance()
-                    )
-
-                    // Вычисляем относительное направление
-                    val relativeDirection = calculateRelativeDirection(
-                        currentAzimuth.toDouble(),
-                        starAzimuth
-                    )
-
-                    // Обновляем стрелку
-                    findViewById<OverlayView>(R.id.overlayView).updateDirection(relativeDirection.toFloat())
-
-                    Log.d("MainActivity", "Current: $currentAzimuth, Star: $starAzimuth, Relative: $relativeDirection")
-                }
-            }
+        Log.d("ArrowDebug", "Start update")
+        val star = viewModel.selectedStar.value ?: run {
+            Log.d("ArrowDebug", "No star selected")
+            return
         }
+        val location = viewModel.location.value ?: run {
+            Log.d("ArrowDebug", "No location")
+            return
+        }
+        val currentAzimuth = viewModel.azimuth.value ?: run {
+            Log.d("ArrowDebug", "No azimuth")
+            return
+        }
+
+        // Конвертируем координаты звезды
+        val (starAzimuth, _) = AstronomicCalculations().equatorialToHorizontal(
+            star.ascension.toDouble(),
+            star.deflection.toDouble(),
+            location.latitude,
+            location.longitude,
+            Calendar.getInstance()
+        )
+
+        // Вычисляем разницу между направлением на звезду и текущим азимутом
+        var relAzimuth = starAzimuth - currentAzimuth
+        // Нормализуем в диапазон [-180..180]
+        relAzimuth = when {
+            relAzimuth > 180 -> relAzimuth - 360
+            relAzimuth < -180 -> relAzimuth + 360
+            else -> relAzimuth
+        }
+
+        overlayView.updateDirection(relAzimuth.toFloat())
+
+        Log.d("ArrowDebug", "StarAz: $starAzimuth, CurrAz: $currentAzimuth, RelAz: $relAzimuth")
     }
 
     private fun calculateRelativeDirection(currentAzimuth: Double, targetAzimuth: Double): Double {
-        // Вычисляем разницу и нормализуем в диапазон [-180, 180]
         var diff = targetAzimuth - currentAzimuth
         diff = when {
             diff > 180 -> diff - 360
             diff < -180 -> diff + 360
             else -> diff
         }
-        // Преобразуем в диапазон [0, 360] для отображения
-        return (diff + 360) % 360
+        return (diff + 360) % 360  // Нормализация в диапазоне [0, 360]
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -216,62 +223,6 @@ class MainActivity : BaseActivity() {
         private const val STAR_SELECTION_REQUEST_CODE = 123
     }
 
-    private class ArrowAnimator(private val overlayView: OverlayView) {
-        private var animator: ValueAnimator? = null
-        private var lastTargetAzimuth = 0f
-        private var lastCurrentAzimuth = 0f
-
-        fun animateTo(
-            targetAzimuth: Float,
-            currentAzimuth: Float,
-            targetAltitude: Float,
-            currentAltitude: Float
-        ) {
-            // Для плавного перехода между анимациями
-            if (animator?.isRunning == true) {
-                animator?.cancel()
-            }
-
-            // Если изменения незначительные - не анимируем
-            if (abs(targetAzimuth - lastTargetAzimuth) < 1f &&
-                abs(currentAzimuth - lastCurrentAzimuth) < 1f) {
-                overlayView.updateDirections(targetAzimuth, currentAzimuth, targetAltitude, currentAltitude)
-                return
-            }
-
-            val startValues = floatArrayOf(
-                lastTargetAzimuth,
-                lastCurrentAzimuth,
-                overlayView.targetAltitude,
-                overlayView.currentAltitude
-            )
-
-            val endValues = floatArrayOf(
-                targetAzimuth,
-                currentAzimuth,
-                targetAltitude,
-                currentAltitude
-            )
-
-            animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 500
-                interpolator = AccelerateDecelerateInterpolator()
-                addUpdateListener { animation ->
-                    val fraction = animation.animatedValue as Float
-                    val current = FloatArray(4).apply {
-                        for (i in indices) {
-                            this[i] = startValues[i] + (endValues[i] - startValues[i]) * fraction
-                        }
-                    }
-                    overlayView.updateDirections(current[0], current[1], current[2], current[3])
-                }
-                start()
-            }
-
-            lastTargetAzimuth = targetAzimuth
-            lastCurrentAzimuth = currentAzimuth
-        }
-    }
 }
 
 

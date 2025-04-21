@@ -18,37 +18,23 @@ import kotlin.math.min
 import kotlin.math.sin
 
 class OverlayView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
-
-    var targetAzimuth: Float = 0f
-    var currentAzimuth: Float = 0f
-    var targetAltitude: Float = 0f
-    var currentAltitude: Float = 0f
-    private var direction = 0f
-
-    fun updateDirection(newDirection: Float) {
-        direction = newDirection
-        invalidate()
-    }
-
     private val arrowDrawable: Drawable = ContextCompat.getDrawable(context, R.drawable.ic_arrow)!!
     private val paint = Paint().apply {
         color = Color.WHITE
         textSize = 48f
+        style = Paint.Style.FILL
     }
 
-    private var targetDirection: Float = 0f // Угол в градусах (0-360)
+    private var relativeAzimuth: Float = 0f // Разница между направлением на звезду и текущим азимутом (-180..180)
 
-    fun updateDirections(
-        targetAzimuth: Float,
-        currentAzimuth: Float,
-        targetAltitude: Float,
-        currentAltitude: Float
-    ) {
-        this.targetAzimuth = targetAzimuth
-        this.currentAzimuth = currentAzimuth
-        this.targetAltitude = targetAltitude
-        this.currentAltitude = currentAltitude
-        invalidate()  // чтобы перерисовать стрелку
+    fun updateDirection(relAzimuth: Float) {
+        // Нормализуем угол
+        relativeAzimuth = when {
+            relAzimuth > 180 -> relAzimuth - 360
+            relAzimuth < -180 -> relAzimuth + 360
+            else -> relAzimuth
+        }
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -57,21 +43,19 @@ class OverlayView(context: Context, attrs: AttributeSet? = null) : View(context,
         val centerX = width / 2f
         val centerY = height / 2f
 
-        // Вычисляем относительный азимут (куда указывать стрелке)
-        val deltaAzimuth = ((targetAzimuth - currentAzimuth + 360) % 360)
-        val angleRad = Math.toRadians(deltaAzimuth.toDouble())
-
-        // Расстояние от центра — стрелка будет по кругу
-        val radius = (min(width, height) / 2f) - 100f
-        val arrowX = centerX + radius * cos(angleRad).toFloat()
-        val arrowY = centerY + radius * sin(angleRad).toFloat()
-
-        // Поворачиваем стрелку по направлению
+        // Рисуем стрелку
         canvas.save()
-        canvas.translate(arrowX, arrowY)
-        canvas.rotate(deltaAzimuth)
-        arrowDrawable.setBounds(-50, -50, 50, 50)
+        canvas.rotate(relativeAzimuth, centerX, centerY)
+        arrowDrawable.setBounds(
+            (centerX - 50).toInt(),
+            (centerY - 100).toInt(),  // Смещаем стрелку выше центра
+            (centerX + 50).toInt(),
+            (centerY).toInt()
+        )
         arrowDrawable.draw(canvas)
         canvas.restore()
+
+        // Отладочная информация
+        canvas.drawText("ΔAz: ${relativeAzimuth.toInt()}°", 50f, 100f, paint)
     }
 }
