@@ -1,11 +1,18 @@
 package com.example.starfinder.viewmodels
 
 import android.location.Location
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.starfinder.models.CelestialBody
+import com.example.starfinder.services.Api.ApiManager
 import com.example.starfinder.services.CompassService
 import com.example.starfinder.services.CoordinateService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainViewModel(
     private val coordinateService: CoordinateService,
@@ -21,6 +28,9 @@ class MainViewModel(
     private val _pitch = MutableLiveData<Float>()
     val pitch: LiveData<Float> = _pitch
 
+    private val _selectedStar = MutableLiveData<CelestialBody?>()
+    val selectedStar: LiveData<CelestialBody?> = _selectedStar
+
     fun start() {
         getCurrentLocation()
         compassService.start()
@@ -34,9 +44,15 @@ class MainViewModel(
         compassService.stop()
     }
 
+    fun selectStar(star: CelestialBody) {
+        _selectedStar.postValue(star)
+    }
+
     private fun getCurrentLocation() {
         coordinateService.getCurrentLocation {
             _location.postValue(it)
         }
     }
 }
+
+

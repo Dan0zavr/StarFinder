@@ -13,7 +13,7 @@
     <com.example.starfinder.OverlayView
         android:id="@+id/overlayView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"/>
 
     <!-- Информационный блок внизу -->
     <LinearLayout
@@ -31,15 +31,16 @@
 
             <!-- Земные координаты -->
             <TableRow>
+
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:text="Координаты"
-                    android:textColor="#FFFFFF"
-                    android:gravity="center"
                     android:background="@drawable/border_cell"
-                    android:padding="4dp" />
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="Координаты"
+                    android:textColor="#FFFFFF" />
 
                 <TextView
                     android:id="@+id/latitude"
@@ -68,7 +69,7 @@
             <TableRow>
                 <TextView
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:text="Небо"
                     android:textColor="#FFFFFF"

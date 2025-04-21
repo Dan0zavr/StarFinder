@@ -6,7 +6,10 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import android.widget.Toast
 import androidx.core.database.getFloatOrNull
+import com.example.starfinder.models.CelestialBody
+import com.example.starfinder.models.DataSource
 import com.example.starfinder.models.Observation
 import com.example.starfinder.models.User
 
@@ -157,6 +160,23 @@ class DataService(context: Context) : SQLiteOpenHelper(
         return result != -1L
     }
 
+    fun getSourceLinkById(sourceId: Int): String? {
+        val db = readableDatabase
+        var link: String? = null
+
+        val cursor = db.rawQuery(
+            "SELECT Link FROM DataSource WHERE SourceId = ?",
+            arrayOf(sourceId.toString())
+        )
+
+        if (cursor.moveToFirst()) {
+            link = cursor.getString(cursor.getColumnIndexOrThrow("Link"))
+        }
+
+        cursor.close()
+        return link
+    }
+
     fun getAllObservationsForUser(userId: Int): List<Observation> {
         val list = mutableListOf<Observation>()
         val db = readableDatabase
@@ -178,9 +198,29 @@ class DataService(context: Context) : SQLiteOpenHelper(
                 list.add(obs)
             } while (cursor.moveToNext())
         }
-
         cursor.close()
         return list
+    }
+
+    fun insertCelestialBody(celestialBody: CelestialBody): Boolean {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("celestialBodyName", celestialBody.celestialBodyName)
+            put("typeId", celestialBody.typeId)
+            put("deflection", celestialBody.deflection)
+            put("ascension", celestialBody.ascension)
+            put("dataSourceId", celestialBody.dataSourceId)
+        }
+        val result = db.insert("CelestialBody", null, values)
+        return result != -1L
+    }
+
+    fun isStarExists(name: String): Boolean {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT 1 FROM Star WHERE name = ?", arrayOf(name))
+        val exists = cursor.moveToFirst()
+        cursor.close()
+        return exists
     }
 
 }

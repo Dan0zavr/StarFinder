@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Указывает, что камера необходима для устройства -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />
@@ -28,6 +29,7 @@
         <activity android:name=".RegisterActivity" android:exported="true" />
         <activity android:name=".ObservationHistoryActivity" android:exported="true" />
         <activity android:name=".ObservationPlanningActivity" android:exported="true"/>
+        <activity android:name=".StarSelectionActivity" android:exported="true"/>
 
         <!-- Основная активность приложения -->
         <activity android:name=".LaunchActivity" android:exported="true">

@@ -7,35 +7,71 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
+import androidx.core.content.ContextCompat
+import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 
 class OverlayView(context: Context, attrs: AttributeSet? = null) : View(context, attrs) {
 
-    var angle: Float = 0f
+    var targetAzimuth: Float = 0f
+    var currentAzimuth: Float = 0f
+    var targetAltitude: Float = 0f
+    var currentAltitude: Float = 0f
+    private var direction = 0f
 
-    // Инициализация paint (лучше один раз, чем каждый раз в onDraw)
-    private val paint: Paint = Paint().apply {
-        color = Color.RED
-        style = Paint.Style.FILL
+    fun updateDirection(newDirection: Float) {
+        direction = newDirection
+        invalidate()
+    }
+
+    private val arrowDrawable: Drawable = ContextCompat.getDrawable(context, R.drawable.ic_arrow)!!
+    private val paint = Paint().apply {
+        color = Color.WHITE
+        textSize = 48f
+    }
+
+    private var targetDirection: Float = 0f // Угол в градусах (0-360)
+
+    fun updateDirections(
+        targetAzimuth: Float,
+        currentAzimuth: Float,
+        targetAltitude: Float,
+        currentAltitude: Float
+    ) {
+        this.targetAzimuth = targetAzimuth
+        this.currentAzimuth = currentAzimuth
+        this.targetAltitude = targetAltitude
+        this.currentAltitude = currentAltitude
+        invalidate()  // чтобы перерисовать стрелку
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        // Получаем центр экрана
-        val cx = width / 2f
-        val cy = height / 2f
-        val length = 200f
+        val centerX = width / 2f
+        val centerY = height / 2f
 
-        // Вычисляем координаты конца стрелки
-        val endX = cx + length * cos(Math.toRadians(angle.toDouble())).toFloat()
-        val endY = cy - length * sin(Math.toRadians(angle.toDouble())).toFloat()
+        // Вычисляем относительный азимут (куда указывать стрелке)
+        val deltaAzimuth = ((targetAzimuth - currentAzimuth + 360) % 360)
+        val angleRad = Math.toRadians(deltaAzimuth.toDouble())
 
-        // Рисуем линию (стрелку)
-        canvas.drawLine(cx, cy, endX, endY, paint)
+        // Расстояние от центра — стрелка будет по кругу
+        val radius = (min(width, height) / 2f) - 100f
+        val arrowX = centerX + radius * cos(angleRad).toFloat()
+        val arrowY = centerY + radius * sin(angleRad).toFloat()
+
+        // Поворачиваем стрелку по направлению
+        canvas.save()
+        canvas.translate(arrowX, arrowY)
+        canvas.rotate(deltaAzimuth)
+        arrowDrawable.setBounds(-50, -50, 50, 50)
+        arrowDrawable.draw(canvas)
+        canvas.restore()
     }
 }
-
