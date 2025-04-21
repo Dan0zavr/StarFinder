@@ -53,18 +53,24 @@ open class BaseActivity : AppCompatActivity() {
                     }
                     true
                 }
-//                R.id.logout -> {
-//                    // Выход из аккаунта
-//                    getSharedPreferences("UserPrefs", MODE_PRIVATE).edit {
-//                        putBoolean("isLoggedIn", false)
-//                        apply()
-//                    }
-//                    startActivity(Intent(this, LoginActivity::class.java))
-//                    finishAffinity() // Закрываем все активности
-//                    true
-//                }
+                R.id.logout -> {
+                    logout()
+                    true
+                }
                 else -> false
             }
         }
+    }
+    private fun logout() {
+        // Очистка флага входа
+        getSharedPreferences("UserPrefs", MODE_PRIVATE).edit().apply {
+            putBoolean("isLoggedIn", false)
+            apply()
+        }
+
+        // Переход на экран авторизации
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
     }
 }

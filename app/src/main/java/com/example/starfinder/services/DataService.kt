@@ -6,6 +6,8 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
+import androidx.core.database.getFloatOrNull
+import com.example.starfinder.models.Observation
 import com.example.starfinder.models.User
 
 class DataService(context: Context) : SQLiteOpenHelper(
@@ -142,4 +144,43 @@ class DataService(context: Context) : SQLiteOpenHelper(
         cursor.close()
         return taken
     }
+
+    fun insertObservation(userId: Int, dateTime: String, latitude: Double, longitude: Double): Boolean {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("UserId", userId)
+            put("ObservationDateTime", dateTime)
+            put("ObservationLatitude", latitude)
+            put("ObservationLongitude", longitude)
+        }
+        val result = db.insert("Observation", null, values)
+        return result != -1L
+    }
+
+    fun getAllObservationsForUser(userId: Int): List<Observation> {
+        val list = mutableListOf<Observation>()
+        val db = readableDatabase
+
+        val cursor = db.rawQuery(
+            "SELECT * FROM Observation WHERE UserId = ? ORDER BY ObservationId DESC",
+            arrayOf(userId.toString())
+        )
+
+        if (cursor.moveToFirst()) {
+            do {
+                val obs = Observation(
+                    observationId = cursor.getInt(cursor.getColumnIndexOrThrow("ObservationId")),
+                    userId = cursor.getInt(cursor.getColumnIndexOrThrow("UserId")),
+                    observationDateTime = cursor.getString(cursor.getColumnIndexOrThrow("ObservationDateTime")),
+                    observationLatitude = cursor.getFloatOrNull(cursor.getColumnIndexOrThrow("ObservationLatitude")),
+                    observationLongitude = cursor.getFloatOrNull(cursor.getColumnIndexOrThrow("ObservationLongitude"))
+                )
+                list.add(obs)
+            } while (cursor.moveToNext())
+        }
+
+        cursor.close()
+        return list
+    }
+
 }

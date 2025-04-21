@@ -10,6 +10,7 @@ class CompassService(context: Context) : SensorEventListener {
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val rotationSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+    var onAzimuthPitchChanged: ((Float, Float) -> Unit)? = null
 
     var azimuth: Float = 0f  // Направление на север (в градусах)
         private set
@@ -35,14 +36,12 @@ class CompassService(context: Context) : SensorEventListener {
             val orientation = FloatArray(3)
             SensorManager.getOrientation(rotationMatrix, orientation)
 
-            // orientation[0] = азимут (в радианах), переведём в градусы
             azimuth = Math.toDegrees(orientation[0].toDouble()).toFloat()
             pitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
 
-            // Убедимся, что угол в пределах 0–360
-            if (azimuth < 0) {
-                azimuth += 360f
-            }
+            if (azimuth < 0) azimuth += 360f
+
+            onAzimuthPitchChanged?.invoke(azimuth, pitch)
         }
     }
 

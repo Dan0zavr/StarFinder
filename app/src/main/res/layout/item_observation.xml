@@ -17,7 +17,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
-        android:id="@+id/timeTextView"
+        android:id="@+id/dateTimeTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Время наблюдения"
@@ -31,7 +31,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Место наблюдения"
-        app:layout_constraintTop_toBottomOf="@id/timeTextView"
+        app:layout_constraintTop_toBottomOf="@id/dateTimeTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />

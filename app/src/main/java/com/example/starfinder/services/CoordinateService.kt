@@ -3,6 +3,7 @@ package com.example.starfinder.services
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
+import android.util.Log
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 
@@ -12,13 +13,24 @@ class CoordinateService(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun getCurrentLocation(callback: (Location?) -> Unit) {
-        fusedLocationClient.getCurrentLocation(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            null
-        ).addOnSuccessListener { location ->
-            callback(location)
-        }.addOnFailureListener {
-            callback(null)
-        }
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    callback(location)
+                } else {
+                    // Запрашиваем точное местоположение, если lastLocation не сработал
+                    fusedLocationClient.getCurrentLocation(
+                        Priority.PRIORITY_HIGH_ACCURACY,
+                        null
+                    ).addOnSuccessListener { loc ->
+                        callback(loc)
+                    }.addOnFailureListener {
+                        callback(null)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                callback(null)
+            }
     }
 }
