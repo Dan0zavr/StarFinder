@@ -180,11 +180,11 @@ class MainActivity : BaseActivity() {
         val currentAltitude = viewModel.pitch.value?.toDouble() ?: 0.0
 
         val (starAzimuth, starAltitude) = AstronomicCalculations().equatorialToHorizontal(
-            ra = star.ascension.toDouble(),
-            dec = star.deflection.toDouble(),
-            lat = location.latitude,
-            lon = location.longitude,
-            dateTime = Calendar.getInstance()
+            raHours = star.ascension.toDouble(),
+            decDeg = star.deflection.toDouble(),
+            latDeg = location.latitude,
+            lonDeg = location.longitude,
+            time = Calendar.getInstance()
         )
 
         // Нормализация углов

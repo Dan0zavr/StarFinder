@@ -1,91 +1,114 @@
 package com.example.starfinder.services
 
+import android.util.Log
+import android.util.Log.d
+import androidx.camera.core.Logger.e
 import java.util.Calendar
+import java.util.TimeZone
 import kotlin.math.*
 
 class AstronomicCalculations {
 
     fun equatorialToHorizontal(
-        ra: Double,      // Прямое восхождение в градусах
-        dec: Double,     // Склонение в градусах
-        lat: Double,     // Широта наблюдателя в градусах
-        lon: Double,     // Долгота наблюдателя в градусах
-        dateTime: Calendar
+        raHours: Double,
+        decDeg: Double,
+        latDeg: Double,
+        lonDeg: Double,
+        time: Calendar
     ): Pair<Double, Double> {
-        // 1. Преобразование даты и времени
-        val jd = julianDate(dateTime)
+        // 1. Переводим всё в радианы
+        val raRad = Math.toRadians(raHours * 15.0) // 1 час = 15 градусов
+        val decRad = Math.toRadians(decDeg)
+        val latRad = Math.toRadians(latDeg)
 
-        // 2. Расчет местного звездного времени (LST)
-        val lstDegrees = localSiderealTime(jd, lon)
+        // 2. Вычисляем звёздное время
+        val lst = calculateLocalSiderealTime(lonDeg, time)
+        val haRad = lst - raRad // Часовой угол
 
-        // 3. Вычисление часового угла (HA)
-        val haDegrees = normalizeAngle(lstDegrees - ra)
-        val haRadians = Math.toRadians(haDegrees)
+        // 3. Вычисляем высоту (altitude)
+        val sinAlt = sin(decRad) * sin(latRad) + cos(decRad) * cos(latRad) * cos(haRad)
+        val altRad = asin(sinAlt)
 
-        // 4. Преобразование углов в радианы
-        val decRad = Math.toRadians(dec)
-        val latRad = Math.toRadians(lat)
+        // 4. Вычисляем азимут (azimuth)
+        val cosAz = (sin(decRad) - sin(altRad) * sin(latRad)) / (cos(altRad) * cos(latRad))
+        val azRad = acos(cosAz.coerceIn(-1.0, 1.0))
 
-        // 5. Расчет высоты (altitude)
-        val sinAlt = sin(decRad) * sin(latRad) + cos(decRad) * cos(latRad) * cos(haRadians)
-        val altitude = Math.toDegrees(Math.asin(sinAlt.coerceIn(-1.0, 1.0)))
+        // 5. Корректируем азимут по квадранту
+        val finalAz = if (sin(haRad) > 0) 2 * PI - azRad else azRad
 
-        // 6. Расчет азимута (azimuth)
-        val cosAz = (sin(decRad) - sinAlt * sin(latRad)) / (cos(Math.asin(sinAlt)) * cos(latRad))
-        val azRad = when {
-            cosAz < -1 -> Math.PI        // Обработка граничных значений
-            cosAz > 1 -> 0.0
-            else -> Math.acos(cosAz.coerceIn(-1.0, 1.0))
+        return Pair(
+            Math.toDegrees(finalAz),  // Азимут (0°=север, 90°=восток)
+            Math.toDegrees(altRad)    // Высота над горизонтом
+        )
+
+    }
+
+    private fun calculateLocalSiderealTime(longitudeDeg: Double, time: Calendar): Double {
+        // 1. Переводим календарь в UTC
+        time.timeZone = TimeZone.getTimeZone("UTC")
+        val utcCalendar = time.clone() as Calendar
+
+        // 2. Извлекаем компоненты даты (в UTC)
+        val year = utcCalendar.get(Calendar.YEAR)
+        val month = utcCalendar.get(Calendar.MONTH) + 1 // Январь = 1
+        val day = utcCalendar.get(Calendar.DAY_OF_MONTH)
+        val hour = utcCalendar.get(Calendar.HOUR_OF_DAY)
+        val minute = utcCalendar.get(Calendar.MINUTE)
+        val second = utcCalendar.get(Calendar.SECOND)
+
+        // 3. Вычисляем юлианскую дату (JD)
+        val jd = calculateJulianDate(year, month, day, hour, minute, second)
+
+        // 4. Вычисляем гринвичское звёздное время (GMST)
+        val gmstRad = calculateGMST(jd)
+
+        // 5. Переводим в местное звёздное время (LST)
+        val lstRad = gmstRad + Math.toRadians(longitudeDeg)
+
+        // 6. Нормализуем в диапазон [0, 2π)
+        return lstRad % (2 * Math.PI).let {
+            if (it < 0) it + 2 * Math.PI else it
         }
-        val azimuth = Math.toDegrees(if (sin(haRadians) > 0) 2 * Math.PI - azRad else azRad)
-
-        return normalizeAzimuth(azimuth) to altitude
     }
 
-    private fun normalizeAngle(degrees: Double): Double {
-        return (degrees % 360.0).let { if (it < 0) it + 360.0 else it }
+    private fun calculateJulianDate(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        second: Int
+    ): Double {
+        val a = floor((14 - month) / 12.0)
+        val y = year + 4800 - a
+        val m = month + 12 * a - 3
+
+        // Вычисляем JD для даты
+        var jd = day + floor((153 * m + 2) / 5.0) +
+                365 * y + floor(y / 4.0) -
+                floor(y / 100.0) + floor(y / 400.0) -
+                32045
+
+        // Добавляем время суток
+        val fractionOfDay = (hour + minute / 60.0 + second / 3600.0) / 24.0
+        return jd + fractionOfDay
     }
 
-    private fun normalizeAzimuth(azimuth: Double): Double {
-        return (azimuth % 360.0).let { if (it < 0) it + 360.0 else it }
-    }
+    private fun calculateGMST(julianDate: Double): Double {
+        // 1. Вычисляем время в юлианских столетиях от эпохи J2000.0
+        val t = (julianDate - 2451545.0) / 36525.0
 
+        // 2. Формула из IAU 2000B model
+        var gmst = 280.46061837 +
+                360.98564736629 * (julianDate - 2451545.0) +
+                0.000387933 * t * t -
+                t * t * t / 38710000.0
 
-    fun julianDate(date: Calendar): Double {
-        val year = date.get(Calendar.YEAR)
-        var month = date.get(Calendar.MONTH) + 1
-        val day = date.get(Calendar.DAY_OF_MONTH)
-        val hour = date.get(Calendar.HOUR_OF_DAY)
-        val minute = date.get(Calendar.MINUTE)
-        val second = date.get(Calendar.SECOND)
+        // 3. Нормализуем в диапазон [0, 360)
+        gmst %= 360.0
+        if (gmst < 0) gmst += 360.0
 
-        var y = year
-        var m = month
-        if (m <= 2) {
-            y -= 1
-            m += 12
-        }
-
-        val a = y / 100
-        val b = 2 - a + (a / 4)
-        val dayFraction = (hour + minute / 60.0 + second / 3600.0) / 24.0
-
-        val jd = (365.25 * (y + 4716)) +
-                (30.6001 * (m + 1)) +
-                day + dayFraction + b - 1524.5
-
-        return jd
-    }
-
-    fun localSiderealTime(jd: Double, longitude: Double): Double {
-        val d = jd - 2451545.0
-
-        var gst = 280.46061837 + 360.98564736629 * d
-        gst %= 360.0
-        if (gst < 0) gst += 360.0
-
-        val lst = (gst + longitude) % 360.0
-        return if (lst < 0) lst + 360.0 else lst
+        return Math.toRadians(gmst)
     }
 
     fun calculateAngleDifference(currentAzimuth: Double, currentAltitude: Double, starAzimuth: Double, starAltitude: Double): Pair<Double, Double> {
@@ -100,3 +123,4 @@ class AstronomicCalculations {
         return deltaAzimuth to deltaAltitude
     }
 }
+
