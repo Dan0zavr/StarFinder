@@ -1,126 +1,120 @@
 package com.example.starfinder.services
 
-import android.util.Log
-import android.util.Log.d
-import androidx.camera.core.Logger.e
 import java.util.Calendar
 import java.util.TimeZone
 import kotlin.math.*
 
 class AstronomicCalculations {
 
+    /**
+     * Перевод экваториальных (RA/DEC в J2000.0) → видимые горизонтальные (азимут, высота).
+     * @param raDeg  Прямое восхождение в градусах (J2000.0)
+     * @param decDeg Склонение в градусах        (J2000.0)
+     * @param latDeg Широта наблюдателя в градусах
+     * @param lonDeg Долгота наблюдателя в градусах
+     * @param timeUtc Время наблюдения (UTC)
+     * @return Pair(азимут°, высота°)
+     */
     fun equatorialToHorizontal(
-        raHours: Double,
+        raDeg: Double,
         decDeg: Double,
         latDeg: Double,
         lonDeg: Double,
-        time: Calendar
+        timeUtc: Calendar
     ): Pair<Double, Double> {
-        // 1. Переводим всё в радианы
-        val raRad = Math.toRadians(raHours * 15.0) // 1 час = 15 градусов
-        val decRad = Math.toRadians(decDeg)
+        // 1. Прецессия J2000.0 → дата
+        val (raCorr, decCorr) = precessJ2000toDate(raDeg, decDeg, timeUtc)
+
+        // 2. В радианы
+        val raRad  = Math.toRadians(raCorr)
+        val decRad = Math.toRadians(decCorr)
         val latRad = Math.toRadians(latDeg)
 
-        // 2. Вычисляем звёздное время
-        val lst = calculateLocalSiderealTime(lonDeg, time)
-        val haRad = lst - raRad // Часовой угол
+        // 3. LST = GMST + долгота
+        val jd   = calculateJulianDate(timeUtc)
+        val gmst = calculateGMST(jd)
+        val lstRad = Math.toRadians((gmst + lonDeg) % 360.0)
 
-        // 3. Вычисляем высоту (altitude)
-        val sinAlt = sin(decRad) * sin(latRad) + cos(decRad) * cos(latRad) * cos(haRad)
-        val altRad = asin(sinAlt)
+        // 4. Часовой угол H = LST − RA
+        var haRad = lstRad - raRad
+        if (haRad < 0) haRad += 2*PI
 
-        // 4. Вычисляем азимут (azimuth)
-        val cosAz = (sin(decRad) - sin(altRad) * sin(latRad)) / (cos(altRad) * cos(latRad))
-        val azRad = acos(cosAz.coerceIn(-1.0, 1.0))
+        // 5. Истинная высота h₀
+        val sinH0 = sin(latRad)*sin(decRad) +
+                cos(latRad)*cos(decRad)*cos(haRad)
+        val h0Rad  = asin(sinH0.coerceIn(-1.0,1.0))  // h₀ in rad
 
-        // 5. Корректируем азимут по квадранту
-        val finalAz = if (sin(haRad) > 0) 2 * PI - azRad else azRad
+        // 6. Новая формула азимута:
+        //    sin A = −cosδ·sinH / cosh
+        //    cos A = (sinδ − sinφ·sinh) / (cosφ·cosh)
+        val cosH0 = cos(h0Rad)
+        val sinA = -cos(decRad)*sin(haRad) / cosH0
+        val cosA = (sin(decRad) - sin(latRad)*sin(h0Rad)) /
+                (cos(latRad)*cosH0)
+        var aRad = atan2(sinA.coerceIn(-1.0,1.0), cosA.coerceIn(-1.0,1.0))
+        if (aRad < 0) aRad += 2*PI
 
-        return Pair(
-            Math.toDegrees(finalAz),  // Азимут (0°=север, 90°=восток)
-            Math.toDegrees(altRad)    // Высота над горизонтом
-        )
+        // 7. Поправка на рефракцию (Bennett)
+        val hDeg0 = Math.toDegrees(h0Rad)
+        val refr  = if (hDeg0 in -1.0..90.0) refractCorrection(hDeg0) else 0.0
+        val hDeg  = hDeg0 + refr/60.0  // convert minutes → degrees
 
+        // 8. Возврат: (азимут, высота)
+        return Pair(Math.toDegrees(aRad), hDeg)
     }
 
-    private fun calculateLocalSiderealTime(longitudeDeg: Double, time: Calendar): Double {
-        // 1. Переводим календарь в UTC
-        time.timeZone = TimeZone.getTimeZone("UTC")
-        val utcCalendar = time.clone() as Calendar
-
-        // 2. Извлекаем компоненты даты (в UTC)
-        val year = utcCalendar.get(Calendar.YEAR)
-        val month = utcCalendar.get(Calendar.MONTH) + 1 // Январь = 1
-        val day = utcCalendar.get(Calendar.DAY_OF_MONTH)
-        val hour = utcCalendar.get(Calendar.HOUR_OF_DAY)
-        val minute = utcCalendar.get(Calendar.MINUTE)
-        val second = utcCalendar.get(Calendar.SECOND)
-
-        // 3. Вычисляем юлианскую дату (JD)
-        val jd = calculateJulianDate(year, month, day, hour, minute, second)
-
-        // 4. Вычисляем гринвичское звёздное время (GMST)
-        val gmstRad = calculateGMST(jd)
-
-        // 5. Переводим в местное звёздное время (LST)
-        val lstRad = gmstRad + Math.toRadians(longitudeDeg)
-
-        // 6. Нормализуем в диапазон [0, 2π)
-        return lstRad % (2 * Math.PI).let {
-            if (it < 0) it + 2 * Math.PI else it
-        }
+    /** Прецессия J2000.0 → дата (упрощённо IAU 2000A) */
+    private fun precessJ2000toDate(ra: Double, dec: Double, timeUtc: Calendar): Pair<Double,Double> {
+        val jd = calculateJulianDate(timeUtc)
+        val T  = (jd - 2451545.0) / 36525.0
+        val zetaA  = (2306.2181*T + 0.30188*T*T + 0.017998*T*T*T)/3600.0
+        val zA     = (2306.2181*T + 1.09468*T*T + 0.018203*T*T*T)/3600.0
+        val thetaA = (2004.3109*T - 0.42665*T*T - 0.041833*T*T*T)/3600.0
+        val zt = Math.toRadians(zetaA)
+        val z  = Math.toRadians(zA)
+        val th = Math.toRadians(thetaA)
+        val α = Math.toRadians(ra)
+        val δ = Math.toRadians(dec)
+        val A = cos(δ)*sin(α + zt)
+        val B = cos(th)*cos(δ)*cos(α + zt) - sin(th)*sin(δ)
+        val C = sin(th)*cos(δ)*cos(α + zt) + cos(th)*sin(δ)
+        val α1 = atan2(A, B) + z
+        val δ1 = asin(C)
+        return Pair(Math.toDegrees(α1), Math.toDegrees(δ1))
     }
 
-    private fun calculateJulianDate(
-        year: Int,
-        month: Int,
-        day: Int,
-        hour: Int,
-        minute: Int,
-        second: Int
-    ): Double {
-        val a = floor((14 - month) / 12.0)
-        val y = year + 4800 - a
-        val m = month + 12 * a - 3
-
-        // Вычисляем JD для даты
-        var jd = day + floor((153 * m + 2) / 5.0) +
-                365 * y + floor(y / 4.0) -
-                floor(y / 100.0) + floor(y / 400.0) -
-                32045
-
-        // Добавляем время суток
-        val fractionOfDay = (hour + minute / 60.0 + second / 3600.0) / 24.0
-        return jd + fractionOfDay
+    /** Рефракция по Bennett (градусы → поправка в угловых минутах) */
+    private fun refractCorrection(hDeg: Double): Double {
+        val tanArg = Math.toRadians(hDeg + 7.31/(hDeg + 4.4))
+        return 1.02 / tan(tanArg)
     }
 
-    private fun calculateGMST(julianDate: Double): Double {
-        // 1. Вычисляем время в юлианских столетиях от эпохи J2000.0
-        val t = (julianDate - 2451545.0) / 36525.0
+    /** Юлианская дата по календарю UTC */
+    private fun calculateJulianDate(timeUtc: Calendar): Double {
+        val utc = timeUtc.clone() as Calendar
+        utc.timeZone = TimeZone.getTimeZone("UTC")
+        var Y = utc.get(Calendar.YEAR)
+        var M = utc.get(Calendar.MONTH) + 1
+        val D  = utc.get(Calendar.DAY_OF_MONTH)
+        val hr = utc.get(Calendar.HOUR_OF_DAY)
+        val mn = utc.get(Calendar.MINUTE)
+        val sc = utc.get(Calendar.SECOND)
+        if (M <= 2) { Y -= 1; M += 12 }
+        val A = floor(Y/100.0).toInt()
+        val B = 2 - A + floor(A/4.0).toInt()
+        val dayFr = (hr + mn/60.0 + sc/3600.0) / 24.0
+        return floor(365.25*(Y+4716)) +
+                floor(30.6001*(M+1)) +
+                D + dayFr + B - 1524.5
+    }
 
-        // 2. Формула из IAU 2000B model
+    /** GMST в градусах по JD */
+    private fun calculateGMST(jd: Double): Double {
+        val T = (jd - 2451545.0)/36525.0
         var gmst = 280.46061837 +
-                360.98564736629 * (julianDate - 2451545.0) +
-                0.000387933 * t * t -
-                t * t * t / 38710000.0
-
-        // 3. Нормализуем в диапазон [0, 360)
-        gmst %= 360.0
-        if (gmst < 0) gmst += 360.0
-
-        return Math.toRadians(gmst)
-    }
-
-    fun calculateAngleDifference(currentAzimuth: Double, currentAltitude: Double, starAzimuth: Double, starAltitude: Double): Pair<Double, Double> {
-        // Разница в азимуте
-        var deltaAzimuth = starAzimuth - currentAzimuth
-        if (deltaAzimuth < 0) deltaAzimuth += 360.0  // Обрабатываем отрицательные значения
-        if (deltaAzimuth > 180.0) deltaAzimuth -= 360.0  // Разница не должна превышать 180 градусов
-
-        // Разница в высоте
-        val deltaAltitude = starAltitude - currentAltitude
-
-        return deltaAzimuth to deltaAltitude
+                360.98564736629*(jd-2451545.0) +
+                0.000387933*T*T -
+                (T*T*T)/38710000.0
+        return (gmst % 360.0 + 360.0) % 360.0
     }
 }
-

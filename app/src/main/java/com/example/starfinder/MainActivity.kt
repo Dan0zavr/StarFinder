@@ -179,13 +179,18 @@ class MainActivity : BaseActivity() {
         val currentAzimuth = viewModel.azimuth.value?.toDouble() ?: 0.0
         val currentAltitude = viewModel.pitch.value?.toDouble() ?: 0.0
 
+        val now = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+
         val (starAzimuth, starAltitude) = AstronomicCalculations().equatorialToHorizontal(
-            raHours = star.ascension.toDouble(),
+            raDeg = star.ascension.toDouble(),
             decDeg = star.deflection.toDouble(),
             latDeg = location.latitude,
             lonDeg = location.longitude,
-            time = Calendar.getInstance()
+            timeUtc = now
         )
+
+        Log.d("DEBUG", "${starAzimuth}, ${starAltitude}")
+
 
         // Нормализация углов
         val azDiff = normalizeAngle(starAzimuth - currentAzimuth)
