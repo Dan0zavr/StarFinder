@@ -9,17 +9,10 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.ViewModelProvider
 import com.example.starfinder.viewmodels.ObservationPlanViewModel
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.navigation.NavigationView
-import java.time.LocalDate
-import java.time.LocalTime
 import java.util.Calendar
 import androidx.activity.viewModels
+import com.example.starfinder.models.Observation
 import com.example.starfinder.services.DataService
 
 class ObservationPlanningActivity : BaseActivity() {
@@ -103,11 +96,20 @@ class ObservationPlanningActivity : BaseActivity() {
                 return@setOnClickListener
             }
 
-            val success = dataService.insertObservation(userId, date, lat, lon)
-            if (success) {
+            val observation = Observation(
+                observationId = 0,
+                observationDateTime = date,
+                observationLatitude = lat,
+                observationLongitude = lon,
+                userId = userId
+            )
+
+            val success = dataService.insert("Observation", observation)
+            if (success != -1L) {
+                Log.d("ACCESSACCE", this.getDatabasePath("StarFinder.sqlite3").absolutePath)
                 Toast.makeText(this, "Наблюдение сохранено", Toast.LENGTH_SHORT).show()
             } else {
-                Log.d("DB_PATH", this.getDatabasePath("StarFinder.db").absolutePath)
+                Log.d("DB_PATH", this.getDatabasePath("StarFinder.sqlite3").absolutePath)
                 Toast.makeText(this, "Ошибка при сохранении", Toast.LENGTH_SHORT).show()
             }
         }

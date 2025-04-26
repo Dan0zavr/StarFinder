@@ -74,15 +74,6 @@
             android:elevation="0dp"
             android:layout_marginTop="8dp" />
 
-        <TextView
-            android:id="@+id/forgotPassword"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Забыли пароль?"
-            android:textColor="@color/purple_200"
-            android:textSize="14sp"
-            android:layout_gravity="center"
-            android:paddingTop="12dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

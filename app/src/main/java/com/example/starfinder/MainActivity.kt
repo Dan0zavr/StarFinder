@@ -1,18 +1,13 @@
 package com.example.starfinder
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.*
-import android.graphics.drawable.Drawable
 import android.location.LocationManager
 import android.os.Bundle
 import android.provider.Settings
-import android.util.AttributeSet
 import android.util.Log
-import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -85,7 +80,6 @@ class MainActivity : BaseActivity() {
         checkGpsEnabled()
         startCamera()
         initViewModel()
-        setupStarSelection()
     }
 
     private fun allPermissionsGranted() = requiredPermissions.all {
@@ -155,15 +149,18 @@ class MainActivity : BaseActivity() {
             updateStarOverlay()
         }
 
-        viewModel.selectedStar.observe(this) { star ->
-            findViewById<TextView>(R.id.starInfo).text = star?.let {
-                "Tracking: ${it.celestialBodyName}"
-            } ?: "No star selected"
-            updateStarOverlay()
+            findViewById<TextView>(R.id.starInfo).setOnClickListener {
+                val intent = Intent(this, StarSelectionActivity::class.java).apply {
+                    putExtra("current_latitude", viewModel.location.value?.latitude?.toDouble() ?: 0.0)
+                    putExtra("current_longitude", viewModel.location.value?.longitude?.toDouble() ?: 0.0)
+
+                    // Получаем ID пользователя из SharedPreferences
+                    val sharedPref = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+                    putExtra("user_id", sharedPref.getInt("user_id", 0))
+                }
+                starSelectionLauncher.launch(intent)
         }
     }
-
-    private var wasVisible = false
 
     private fun updateStarOverlay() {
         val star = viewModel.selectedStar.value ?: run {
@@ -210,11 +207,6 @@ class MainActivity : BaseActivity() {
         return ((degrees % 360.0) + 540.0) % 360.0 - 180.0 // Нормализация в [-180, 180]
     }
 
-    private fun setupStarSelection() {
-        findViewById<TextView>(R.id.starInfo).setOnClickListener {
-            starSelectionLauncher.launch(Intent(this, StarSelectionActivity::class.java))
-        }
-    }
 
     override fun onStart() {
         super.onStart()

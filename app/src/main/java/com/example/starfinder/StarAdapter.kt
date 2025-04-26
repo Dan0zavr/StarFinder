@@ -1,6 +1,7 @@
 package com.example.starfinder
 
 import android.content.Context
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -31,7 +32,9 @@ class StarAdapter(
             .inflate(android.R.layout.simple_list_item_1, parent, false)
 
         val star = stars[position]
-        view.findViewById<TextView>(android.R.id.text1).text = star.name
+        val textView = view.findViewById<TextView>(android.R.id.text1)
+        textView.text = star.name
+        textView.setTextColor(Color.WHITE) // Устанавливаем белый цвет текста
 
         view.setOnClickListener {
             itemClickListener?.invoke(star)

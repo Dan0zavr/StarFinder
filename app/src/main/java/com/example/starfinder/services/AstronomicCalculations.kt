@@ -6,15 +6,7 @@ import kotlin.math.*
 
 class AstronomicCalculations {
 
-    /**
-     * Перевод экваториальных (RA/DEC в J2000.0) → видимые горизонтальные (азимут, высота).
-     * @param raDeg  Прямое восхождение в градусах (J2000.0)
-     * @param decDeg Склонение в градусах        (J2000.0)
-     * @param latDeg Широта наблюдателя в градусах
-     * @param lonDeg Долгота наблюдателя в градусах
-     * @param timeUtc Время наблюдения (UTC)
-     * @return Pair(азимут°, высота°)
-     */
+
     fun equatorialToHorizontal(
         raDeg: Double,
         decDeg: Double,
@@ -63,7 +55,6 @@ class AstronomicCalculations {
         return Pair(Math.toDegrees(aRad), hDeg)
     }
 
-    /** Прецессия J2000.0 → дата (упрощённо IAU 2000A) */
     private fun precessJ2000toDate(ra: Double, dec: Double, timeUtc: Calendar): Pair<Double,Double> {
         val jd = calculateJulianDate(timeUtc)
         val T  = (jd - 2451545.0) / 36525.0
@@ -73,23 +64,21 @@ class AstronomicCalculations {
         val zt = Math.toRadians(zetaA)
         val z  = Math.toRadians(zA)
         val th = Math.toRadians(thetaA)
-        val α = Math.toRadians(ra)
-        val δ = Math.toRadians(dec)
-        val A = cos(δ)*sin(α + zt)
-        val B = cos(th)*cos(δ)*cos(α + zt) - sin(th)*sin(δ)
-        val C = sin(th)*cos(δ)*cos(α + zt) + cos(th)*sin(δ)
+        val alpha = Math.toRadians(ra)
+        val beta = Math.toRadians(dec)
+        val A = cos(beta)*sin(alpha + zt)
+        val B = cos(th)*cos(beta)*cos(alpha + zt) - sin(th)*sin(beta)
+        val C = sin(th)*cos(beta)*cos(alpha + zt) + cos(th)*sin(beta)
         val α1 = atan2(A, B) + z
         val δ1 = asin(C)
         return Pair(Math.toDegrees(α1), Math.toDegrees(δ1))
     }
 
-    /** Рефракция по Bennett (градусы → поправка в угловых минутах) */
     private fun refractCorrection(hDeg: Double): Double {
         val tanArg = Math.toRadians(hDeg + 7.31/(hDeg + 4.4))
         return 1.02 / tan(tanArg)
     }
 
-    /** Юлианская дата по календарю UTC */
     private fun calculateJulianDate(timeUtc: Calendar): Double {
         val utc = timeUtc.clone() as Calendar
         utc.timeZone = TimeZone.getTimeZone("UTC")
@@ -108,7 +97,6 @@ class AstronomicCalculations {
                 D + dayFr + B - 1524.5
     }
 
-    /** GMST в градусах по JD */
     private fun calculateGMST(jd: Double): Double {
         val T = (jd - 2451545.0)/36525.0
         var gmst = 280.46061837 +

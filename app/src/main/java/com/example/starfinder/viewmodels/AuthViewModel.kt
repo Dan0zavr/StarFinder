@@ -8,31 +8,38 @@ import com.example.starfinder.models.User
 import com.example.starfinder.services.DataService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class AuthViewModel(private val dbHelper: DataService) : ViewModel() {
-
+class AuthViewModel(private val dataService: DataService) : ViewModel() {
     private val _loginResult = MutableLiveData<User?>()
-    val loginResult: LiveData<User?> get() = _loginResult
-
-    private val _registerSuccess = MutableLiveData<Boolean>()
-    val registerSuccess: LiveData<Boolean> get() = _registerSuccess
+    val loginResult: LiveData<User?> = _loginResult
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
-            val user = dbHelper.getUserByEmailAndPassword(email, password)
+            val user = withContext(Dispatchers.IO) {
+                dataService.getUserByEmailAndPassword(email, password)
+            }
             _loginResult.postValue(user)
         }
     }
 
-    fun register(userName: String, email: String, password: String, callback: (Boolean) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val existingUser = dbHelper.getUserByEmail(email)
-            if (existingUser == null) {
-                dbHelper.insertUser(User(0, userName, email, password))
-                callback(true)
-            } else {
-                callback(false)
+    fun register(username: String, email: String, password: String, callback: (Long) -> Unit) {
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                if (dataService.isEmailTaken(email)) {
+                    -1L
+                } else {
+                    val user = User(
+                        userId = 0,
+                        userName = username,
+                        email = email,
+                        password = password
+                    )
+                    dataService.insert("User", user)
+                }
             }
+            callback(success)
         }
     }
 }
+

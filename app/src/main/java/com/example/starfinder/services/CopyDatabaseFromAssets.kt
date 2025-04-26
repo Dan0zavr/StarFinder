@@ -10,7 +10,7 @@ import java.io.OutputStream
 import java.nio.channels.FileChannel
 
 fun copyDatabaseFromAssets(context: Context) {
-    val dbFile = context.getDatabasePath("StarFinder.db") // имя базы данных в локальном хранилище
+    val dbFile = context.getDatabasePath("StarFinder.sqlite3") // имя базы данных в локальном хранилище
 
     // Удаляем старую базу данных перед копированием новой
     if (dbFile.exists()) {
@@ -23,7 +23,7 @@ fun copyDatabaseFromAssets(context: Context) {
 
     try {
         // Открываем поток для чтения базы данных из assets
-        val inputStream: InputStream = context.assets.open("StarFinder.db") // Получаем AssetInputStream
+        val inputStream: InputStream = context.assets.open("StarFinder.sqlite3") // Получаем AssetInputStream
 
         // Открываем поток для записи в локальное хранилище
         val outputStream: OutputStream = FileOutputStream(dbFile)

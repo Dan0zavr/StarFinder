@@ -14,8 +14,8 @@ class ObservationPlanViewModel : ViewModel() {
 
     init {
         celestialBody.value = ""
-        latitude.value = null
-        longitude.value = null
+        latitude.value = 0.0
+        longitude.value = 0.0
         date.value = ""
         time.value = ""
     }

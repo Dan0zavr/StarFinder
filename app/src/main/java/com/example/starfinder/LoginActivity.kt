@@ -1,60 +1,98 @@
 package com.example.starfinder
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Patterns
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import com.example.starfinder.databinding.LogInWindowBinding
+import com.example.starfinder.models.User
 import com.example.starfinder.services.DataService
 import com.example.starfinder.services.SharedPreferences.SessionManager
 import com.example.starfinder.viewmodels.AuthViewModel
+import com.example.starfinder.viewmodels.factories.AuthViewModelFactory
 
 class LoginActivity : AppCompatActivity() {
-
+    private lateinit var binding: LogInWindowBinding
     private lateinit var viewModel: AuthViewModel
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.log_in_window)
+        binding = LogInWindowBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val dbHelper = DataService(this)
-        viewModel = AuthViewModel(dbHelper)
+        viewModel = ViewModelProvider(this,
+            AuthViewModelFactory(DataService(this)))[AuthViewModel::class.java]
 
-        val emailEdit = findViewById<EditText>(R.id.editTextTextEmailAddress2)
-        val passEdit = findViewById<EditText>(R.id.editTextTextPassword3)
-        val loginBtn = findViewById<Button>(R.id.loginButton)
-        val registerBtn = findViewById<Button>(R.id.registerButton)
+        setupObservers()
+        setupListeners()
+    }
 
+
+    private fun setupObservers() {
         viewModel.loginResult.observe(this) { user ->
-            if (user != null) {
-                Toast.makeText(this, "Добро пожаловать, ${user.userName}!", Toast.LENGTH_SHORT).show()
-                // Сохраняем информацию о том, что пользователь вошел
-                val sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE)
-                val editor = sharedPreferences.edit()
-                editor.putBoolean("isLoggedIn", true)
-                editor.apply()
+            user?.let {
+                saveUserSession(it)
+                navigateToMainScreen(it)
+            } ?: showLoginError()
+        }
+    }
 
-                // Переходим на экран планирования
-                startActivity(Intent(this, ObservationPlanningActivity::class.java))
-                finish() // Закрываем окно входа
-            } else {
-                Toast.makeText(this, "Неверный email или пароль", Toast.LENGTH_SHORT).show()
+    private fun setupListeners() {
+        binding.loginButton.setOnClickListener {
+            val email = binding.editTextTextEmailAddress2.text.toString()
+            val password = binding.editTextTextPassword3.text.toString()
+
+            if (validateInput(email, password)) {
+                viewModel.login(email, password)
             }
         }
 
-        loginBtn.setOnClickListener {
-            val email = emailEdit.text.toString()
-            val password = passEdit.text.toString()
-            viewModel.login(email, password)
+        binding.registerButton.setOnClickListener {
+            navigateToRegisterScreen()
         }
+    }
 
-        registerBtn.setOnClickListener {
-            // Переход к окну регистрации
-            val intent = Intent(this, RegisterActivity::class.java)  // Здесь указываешь активность для регистрации
-            startActivity(intent)
+    private fun validateInput(email: String, password: String): Boolean {
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.editTextTextEmailAddress2.error = "Введите корректный email"
+            return false
         }
+        if (password.isEmpty() || password.length < 6) {
+            binding.editTextTextPassword3.error = "Пароль должен содержать минимум 6 символов"
+            return false
+        }
+        return true
+    }
+
+    private fun saveUserSession(user: User) {
+        getSharedPreferences("user_prefs", MODE_PRIVATE).edit().apply {
+            putInt("UserId", user.userId) // user - объект из БД
+            apply()
+        }
+    }
+
+    private fun navigateToMainScreen(user: User) {
+        startActivity(Intent(this, MainActivity::class.java))
+        val sharedPref = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putInt("UserId", user.userId) // user - объект с сервера/БД
+            putBoolean("isLoggedIn", true)
+            apply()
+        }
+        finishAffinity()
+    }
+
+    private fun showLoginError() {
+        Toast.makeText(this, "Неверный email или пароль", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun navigateToRegisterScreen() {
+        startActivity(Intent(this, RegisterActivity::class.java))
     }
 }

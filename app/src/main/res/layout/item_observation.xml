@@ -1,38 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:padding="12dp">
+    android:orientation="vertical"
+    android:padding="16dp">
 
     <TextView
-        android:id="@+id/celestialBodyTextView"
-        android:layout_width="0dp"
+        android:id="@+id/starName"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Небесное тело"
-        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/observationDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:textSize="16sp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/observationTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textStyle="bold"/>
 
     <TextView
-        android:id="@+id/dateTimeTextView"
-        android:layout_width="0dp"
+        android:id="@+id/observationCoordinates"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Время наблюдения"
-        app:layout_constraintTop_toBottomOf="@id/celestialBodyTextView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
-
-    <TextView
-        android:id="@+id/locationTextView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Место наблюдения"
-        app:layout_constraintTop_toBottomOf="@id/dateTimeTextView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:layout_marginTop="4dp"
+        android:textSize="14sp"/>
+</LinearLayout>

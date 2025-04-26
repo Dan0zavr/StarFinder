@@ -6,7 +6,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.starfinder.models.StarDetails
 import com.example.starfinder.models.StarInfo
 import com.example.starfinder.services.Api.ApiManager
 import kotlinx.coroutines.launch
@@ -24,7 +23,7 @@ class StarSearchViewModel : ViewModel() {
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
-    fun searchStarByName(name: String) {
+    fun searchStarByNameInSIMBAD(name: String) {
         viewModelScope.launch {
             try {
                 _loading.value = true
@@ -35,17 +34,17 @@ class StarSearchViewModel : ViewModel() {
                     query id $name
                 """.trimIndent()
 
-                val response = ApiManager.getSimbadService().searchStars(script)
+                val SIMBADresponse = ApiManager.getSimbadService().searchStars(script)
 
-                if (response.isSuccessful) {
-                    val text = response.body() ?: ""
-                    val stars = parseStars(text)
+                if (SIMBADresponse.isSuccessful) {
+                    val text = SIMBADresponse.body() ?: ""
+                    val stars = parseStars(text, name)
                     _starResults.value = stars
                 } else {
-                    _error.value = "Ошибка API: ${response.code()}"
+                    _error.value = "Ошибка API: ${SIMBADresponse.code()}"
                 }
 
-                Log.d("SIMBAD", "Ответ: ${response.body()}")
+                Log.d("SIMBAD", "Ответ: ${SIMBADresponse.body()}")
             } catch (e: Exception) {
                 _error.value = "Ошибка: ${e.message}"
             } finally {
@@ -54,7 +53,7 @@ class StarSearchViewModel : ViewModel() {
         }
     }
 
-    private fun parseStars(text: String): List<StarInfo> {
+    private fun parseStars(text: String, name: String): List<StarInfo> {
         return text.lineSequence()
             .filter { line ->
                 line.isNotBlank() && "|" in line &&
@@ -64,7 +63,6 @@ class StarSearchViewModel : ViewModel() {
             }
             .mapNotNull { line ->
                 val parts = line.split("|").map { it.trim() }
-                val name = parts.getOrNull(0) ?: return@mapNotNull null
                 val raStr = parts.getOrNull(1) ?: return@mapNotNull null
                 val decStr = parts.getOrNull(2) ?: return@mapNotNull null
 
@@ -72,7 +70,7 @@ class StarSearchViewModel : ViewModel() {
                 val decDeg = dmsToDegrees(decStr)
 
                 if (raDeg != null && decDeg != null) {
-                    StarInfo(name = name, ra = raDeg, dec = decDeg, epoch = "J2000")
+                    StarInfo(name = name, ra = raDeg, dec = decDeg, epoch = "J2000", dataSourceId = 0)
                 } else null
             }
             .toList()
