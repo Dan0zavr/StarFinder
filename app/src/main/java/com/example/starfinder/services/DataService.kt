@@ -175,8 +175,8 @@ class DataService(context: Context) : SQLiteOpenHelper(
                 CelestialBody(
                     celestialBodyId = cursor.getInt(cursor.getColumnIndexOrThrow("CelestialBodyId")),
                     celestialBodyName = cursor.getString(cursor.getColumnIndexOrThrow("CelestialBodyName")),
-                    deflection = cursor.getFloat(cursor.getColumnIndexOrThrow("Deflection")),
-                    ascension = cursor.getFloat(cursor.getColumnIndexOrThrow("Ascension")),
+                    deflection = cursor.getDouble(cursor.getColumnIndexOrThrow("Deflection")),
+                    ascension = cursor.getDouble(cursor.getColumnIndexOrThrow("Ascension")),
                     dataSourceId = cursor.getInt(cursor.getColumnIndexOrThrow("DataSourceId"))
                 )
             )

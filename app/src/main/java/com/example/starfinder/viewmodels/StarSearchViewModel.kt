@@ -1,27 +1,63 @@
 package com.example.starfinder.viewmodels
 
-import android.R.attr.query
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.starfinder.models.CelestialBody
 import com.example.starfinder.models.StarInfo
 import com.example.starfinder.services.Api.ApiManager
+import com.example.starfinder.services.DataService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.net.URLEncoder
+import kotlinx.coroutines.withContext
 
-class StarSearchViewModel : ViewModel() {
+class StarSearchViewModel(service: DataService) : ViewModel() {
+
     private val _starResults = MutableLiveData<List<StarInfo>>()
     val starResults: LiveData<List<StarInfo>> = _starResults
+
+    private val _starId = -1L
+    var starId = _starId
 
     private val _loading = MutableLiveData<Boolean>()
     val loading: LiveData<Boolean> = _loading
 
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
+
+    private val dataService = service
+
+    fun searchStar(name: String) {
+        viewModelScope.launch {
+            _loading.value = true
+
+            // 1. Сначала проверяем локальную БД
+            val stars = dataService.getWithQuery("SELECT * FROM CelestialBody WHERE CelestialBodyName = ?", arrayOf(name)){
+                    cursor ->
+                StarInfo(
+                    name = cursor.getString(cursor.getColumnIndexOrThrow("CelestialBodyName")),
+                    dec= cursor.getDouble(cursor.getColumnIndexOrThrow("Deflection")),
+                    ra = cursor.getDouble(cursor.getColumnIndexOrThrow("Ascension")),
+                    dataSourceId = cursor.getInt(cursor.getColumnIndexOrThrow("DataSourceId"))
+                ).also {
+                    starId = cursor.getLong(cursor.getColumnIndexOrThrow("CelestialBodyId"))
+                }
+            }
+
+            // 2. Если нашли в БД - используем эти данные
+            if (!stars.isEmpty()) {
+                _starResults.value = stars.toList()
+                _loading.value = false
+                Log.d("DATABASE", "Данные из бд")
+                return@launch
+            }
+
+            // 3. Если нет в БД - ищем в API
+            searchStarByNameInSIMBAD(name)
+        }
+    }
 
     fun searchStarByNameInSIMBAD(name: String) {
         viewModelScope.launch {
@@ -76,10 +112,10 @@ class StarSearchViewModel : ViewModel() {
             .toList()
     }
 
-    private fun hmsToDegrees(hms: String): Float? {
+    private fun hmsToDegrees(hms: String): Double? {
         return try {
             val parts = hms.split(" ")
-            val hours = parts.getOrNull(0)?.toFloatOrNull() ?: return null
+            val hours = parts.getOrNull(0)?.toDoubleOrNull() ?: return null
             val minutes = parts.getOrNull(1)?.toFloatOrNull() ?: 0f
             val seconds = parts.getOrNull(2)?.toFloatOrNull() ?: 0f
             (hours + minutes / 60 + seconds / 3600) * 15f
@@ -88,11 +124,11 @@ class StarSearchViewModel : ViewModel() {
         }
     }
 
-    private fun dmsToDegrees(dms: String): Float? {
+    private fun dmsToDegrees(dms: String): Double? {
         return try {
             val parts = dms.split(" ")
             val sign = if (parts[0].startsWith("-")) -1 else 1
-            val degrees = parts.getOrNull(0)?.toFloatOrNull() ?: return null
+            val degrees = parts.getOrNull(0)?.toDoubleOrNull() ?: return null
             val minutes = parts.getOrNull(1)?.toFloatOrNull() ?: 0f
             val seconds = parts.getOrNull(2)?.toFloatOrNull() ?: 0f
             sign * (kotlin.math.abs(degrees) + minutes / 60 + seconds / 3600)

@@ -14,7 +14,7 @@ class LaunchActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        copyDatabaseFromAssets(this)
+        copyDatabaseFromAssets(this)
         ApiManager.init(this)
 
         val sharedPref = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)

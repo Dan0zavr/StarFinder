@@ -15,6 +15,7 @@ import com.example.starfinder.models.StarInfo
 import com.example.starfinder.services.Api.ApiManager
 import com.example.starfinder.services.DataService
 import com.example.starfinder.viewmodels.StarSearchViewModel
+import com.example.starfinder.viewmodels.factories.StarSearchViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,28 +33,38 @@ class StarSelectionActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         ApiManager.init(applicationContext)
-        viewModel = ViewModelProvider(this)[StarSearchViewModel::class.java]
+
         dataService = DataService(applicationContext)
 
         setupUI()
-        setupObservers()
+        initViewModel()
     }
 
     private fun setupUI() {
         binding.searchButton.setOnClickListener {
             val query = binding.searchEditText.text.toString()
+
             if (query.isNotBlank()) {
-                viewModel.searchStarByNameInSIMBAD(query)
+                viewModel.searchStar(query)
             }
+
         }
     }
 
+    private fun initViewModel(){
+        val factory = StarSearchViewModelFactory(dataService)
+        viewModel = ViewModelProvider(this, factory)[StarSearchViewModel::class.java]
+        setupObservers()
+    }
+
     private fun setupObservers() {
+
         viewModel.starResults.observe(this) { stars ->
             val adapter = StarAdapter(this, stars).apply {
                 setOnItemClickListener { star ->
                     binding.searchEditText.setText(star.name)
                     processStarSelection(star)
+
                 }
             }
             binding.starListView.adapter = adapter
@@ -71,46 +82,49 @@ class StarSelectionActivity : AppCompatActivity() {
     }
 
     private fun processStarSelection(starInfo: StarInfo) {
-        // Получаем данные из MainActivity через Intent
 
+        // Получаем данные из MainActivity через Intent
         val latitude = intent.getDoubleExtra("current_latitude", 0.0)
         val longitude = intent.getDoubleExtra("current_longitude", 0.0)
         if (latitude == 0.0 && longitude == 0.0) {
             Toast.makeText(this, "Ошибка: координаты не переданы", Toast.LENGTH_SHORT).show()
         }
-        val error: Long = -1
 
+        var insertedStar = -1L
         val userId = getSharedPreferences("user_prefs", MODE_PRIVATE).getInt("UserId", -1)
+        lateinit var star: CelestialBody
 
-        val star = CelestialBody(
-            celestialBodyId = null,
-            celestialBodyName = starInfo.name,
-            deflection = starInfo.dec,
-            ascension = starInfo.ra,
-            dataSourceId = starInfo.dataSourceId
-        )
-
-        // Создаем наблюдение и связываем с небесным телом
-        var insertedStar = dataService.insert("CelestialBody", star)
-        if (insertedStar != error) {
-
-            val observation = Observation(
-                observationId = null,
-                observationLatitude = latitude,
-                observationLongitude = longitude,
-                observationDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date()),
-                userId = userId
+        //Добавляем или устанавливаем звезду
+        if(viewModel.starId == -1L){
+            star = CelestialBody(
+                celestialBodyId = null,
+                celestialBodyName = starInfo.name,
+                deflection = starInfo.dec,
+                ascension = starInfo.ra,
+                dataSourceId = starInfo.dataSourceId
             )
-            val insertedObservation = dataService.insert("Observation", observation)
-            if(insertedObservation != error){
-                Log.d("OBSERVATION", "Creating new observation for user $userId")
-                val link = CelestialBodyInObservation(
-                    celestialBodyId = insertedStar.toInt(),
-                    observationId = insertedObservation.toInt()
-                )
-                dataService.insert("CelestialBodyInObservation", link)
-            }
 
+            insertedStar = dataService.insert("CelestialBody", star)
+        }
+        else{
+            insertedStar = viewModel.starId
+            star = dataService.getWithQuery("SELECT * FROM CelestialBody WHERE CelestialBodyId = ?", arrayOf(insertedStar.toString())){
+                    cursor ->
+                CelestialBody(
+                    celestialBodyId = cursor.getInt(cursor.getColumnIndexOrThrow("CelestialBodyId")),
+                    celestialBodyName = cursor.getString(cursor.getColumnIndexOrThrow("CelestialBodyName")),
+                    ascension = cursor.getDouble(cursor.getColumnIndexOrThrow("Ascension")),
+                    deflection = cursor.getDouble(cursor.getColumnIndexOrThrow("Deflection")),
+                    dataSourceId = cursor.getInt(cursor.getColumnIndexOrThrow("DataSourceId"))
+
+                )
+            }.first()
+        }
+
+        //Если нет ошибок, создаем наблюдение и связываем
+        if (insertedStar != -1L) {
+            val insertedObservation = createObservation(latitude, longitude, userId)
+            createLink(insertedStar, insertedObservation)
             setResult(RESULT_OK, Intent().apply {
                 putExtra("selected_star", star)
             })
@@ -124,6 +138,28 @@ class StarSelectionActivity : AppCompatActivity() {
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    fun createObservation(latitude: Double, longitude: Double, userId: Int): Long{
+        val observation = Observation(
+            observationId = null,
+            observationLatitude = latitude,
+            observationLongitude = longitude,
+            observationDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date()),
+            userId = userId
+        )
+        val insertedObservation = dataService.insert("Observation", observation)
+
+        Log.d("OBSERVATION", "Creating new observation for user $userId")
+        return insertedObservation
+    }
+
+    fun createLink(insertedStar: Long, insertedObservation: Long){
+        val link = CelestialBodyInObservation(
+            celestialBodyId = insertedStar.toInt(),
+            observationId = insertedObservation.toInt()
+        )
+        dataService.insert("CelestialBodyInObservation", link)
     }
 
     override fun onDestroy() {

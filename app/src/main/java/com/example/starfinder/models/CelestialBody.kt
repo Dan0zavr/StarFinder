@@ -7,7 +7,7 @@ import kotlinx.parcelize.Parcelize
 data class CelestialBody(
     val celestialBodyId: Int?,
     val celestialBodyName: String,
-    val deflection: Float,
-    val ascension: Float,
+    val deflection: Double,
+    val ascension: Double,
     val dataSourceId: Int
 ) : Parcelable
