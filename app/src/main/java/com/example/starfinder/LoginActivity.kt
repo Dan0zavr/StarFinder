@@ -37,7 +37,6 @@ class LoginActivity : AppCompatActivity() {
     private fun setupObservers() {
         viewModel.loginResult.observe(this) { user ->
             user?.let {
-                saveUserSession(it)
                 navigateToMainScreen(it)
             } ?: showLoginError()
         }
@@ -70,21 +69,9 @@ class LoginActivity : AppCompatActivity() {
         return true
     }
 
-    private fun saveUserSession(user: User) {
-        getSharedPreferences("user_prefs", MODE_PRIVATE).edit().apply {
-            putInt("UserId", user.userId) // user - объект из БД
-            apply()
-        }
-    }
-
     private fun navigateToMainScreen(user: User) {
+        UserSession.saveUser(this, user)
         startActivity(Intent(this, MainActivity::class.java))
-        val sharedPref = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        with(sharedPref.edit()) {
-            putInt("UserId", user.userId) // user - объект с сервера/БД
-            putBoolean("isLoggedIn", true)
-            apply()
-        }
         finishAffinity()
     }
 

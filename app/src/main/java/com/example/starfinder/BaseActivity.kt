@@ -52,6 +52,7 @@ open class BaseActivity : AppCompatActivity() {
 
         return when (item.itemId) {
             R.id.observe -> navigateToActivity<MainActivity>()
+            R.id.plans -> navigateToActivity<PlansActivity>()
             R.id.planning -> navigateToActivity<ObservationPlanningActivity>()
             R.id.history -> navigateToActivity<ObservationHistoryActivity>()
             R.id.logout -> {

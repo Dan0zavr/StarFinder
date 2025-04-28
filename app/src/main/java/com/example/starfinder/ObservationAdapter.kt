@@ -3,6 +3,7 @@ package com.example.starfinder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.starfinder.models.CelestialBody
@@ -14,36 +15,51 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class ObservationAdapter(
-    private val observations: List<Observation>,
-    private val dataService: DataService
+    private val items: List<Observation>,
+    private val dataService: DataService,
+    private val itemLayoutRes: Int // R.layout.item_observation или R.layout.item_plan
 ) : RecyclerView.Adapter<ObservationAdapter.ViewHolder>() {
 
+    // Callback для кликов
+    var onItemClick: ((Observation) -> Unit)? = null
+    var onDeleteClick: ((Observation) -> Unit)? = null
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val objectName: TextView = view.findViewById(R.id.starName)
         val date: TextView = view.findViewById(R.id.observationDate)
         val time: TextView = view.findViewById(R.id.observationTime)
         val coordinates: TextView = view.findViewById(R.id.observationCoordinates)
+        val btnDelete: Button? = view.findViewById(R.id.btnDelete) // Опционально
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_observation, parent, false)
+            .inflate(itemLayoutRes, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val observation = observations[position]
-        val obId = observation.observationId
-        val starName = dataService.getStarNameByObservation(obId)
+        val observation = items[position]
+        val starName = dataService.getStarNameByObservation(observation.observationId)
 
+        // Общие данные
         holder.objectName.text = starName
         holder.date.text = "Дата:${formatDate(observation.observationDateTime)}"
         holder.time.text = "Время:${formatTime(observation.observationDateTime)}"
         holder.coordinates.text = "Ш: ${observation.observationLatitude?.toString() ?: "N/A"}, Д: ${observation.observationLongitude?.toString() ?: "N/A"}"
+
+        // Обработка кликов
+        holder.itemView.setOnClickListener {
+            onItemClick?.invoke(observation)
+        }
+
+        // Кнопка удаления (если есть в layout)
+        holder.btnDelete?.setOnClickListener {
+            onDeleteClick?.invoke(observation)
+        }
     }
 
-    override fun getItemCount() = observations.size
+    override fun getItemCount() = items.size
 
     private fun formatDate(dateTime: String): String {
         return try {

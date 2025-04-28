@@ -26,9 +26,19 @@ class StarSelectionActivity : AppCompatActivity() {
     private lateinit var dataService: DataService
     private var _binding: ActivityStarSelectionBinding? = null
     private val binding get() = _binding!!
+    private val userId by lazy {
+        intent.getIntExtra("user_id", -1).takeIf { it != -1 }
+            ?: UserSession.getCurrentUserId(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (userId == -1) {
+            Toast.makeText(this, "Требуется авторизация", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         _binding = ActivityStarSelectionBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

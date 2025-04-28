@@ -5,6 +5,10 @@
         android:icon="@android:drawable/ic_menu_view"
         android:title="Наблюдать" />
     <item
+        android:id="@+id/plans"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="Планы" />
+    <item
         android:id="@+id/planning"
         android:icon="@android:drawable/ic_menu_preferences"
         android:title="Планировать наблюдения" />

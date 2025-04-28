@@ -12,9 +12,8 @@ object UserSession {
 
     fun saveUser(context: Context, user: User) {
         context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().apply {
-            putBoolean(KEY_IS_LOGGED_IN, true)
             putInt(KEY_USER_ID, user.userId)
-            putString(KEY_USER_NAME, user.userName)
+            putBoolean(KEY_IS_LOGGED_IN, true)
             apply()
         }
     }

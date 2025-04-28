@@ -155,8 +155,7 @@ class MainActivity : BaseActivity() {
                     putExtra("current_longitude", viewModel.location.value?.longitude?.toDouble() ?: 0.0)
 
                     // Получаем ID пользователя из SharedPreferences
-                    val sharedPref = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-                    putExtra("user_id", sharedPref.getInt("user_id", 0))
+                    putExtra("user_id", UserSession.getCurrentUserId(this@MainActivity))
                 }
                 starSelectionLauncher.launch(intent)
         }

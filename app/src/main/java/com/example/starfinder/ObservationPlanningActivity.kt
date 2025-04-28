@@ -2,6 +2,7 @@ package com.example.starfinder
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -12,6 +13,7 @@ import android.widget.Toast
 import com.example.starfinder.viewmodels.ObservationPlanViewModel
 import java.util.Calendar
 import androidx.activity.viewModels
+import com.example.starfinder.UserSession.getCurrentUserId
 import com.example.starfinder.models.Observation
 import com.example.starfinder.services.DataService
 
@@ -59,7 +61,10 @@ class ObservationPlanningActivity : BaseActivity() {
         }
 
         selectCoordinatesButton.setOnClickListener {
-            viewModel.setCoordinates(55.75, 37.61) // Москва
+            // Получаем координаты из ViewModel или используем значения по умолчанию
+            val latitude = viewModel.latitude.value ?: 55.751574
+            val longitude = viewModel.longitude.value ?: 37.573856
+            openMapPicker(latitude, longitude)
         }
 
         selectDateButton.setOnClickListener {
@@ -85,7 +90,7 @@ class ObservationPlanningActivity : BaseActivity() {
         }
 
         saveButton.setOnClickListener {
-            val userId = getCurrentUserId()
+            val userId = getCurrentUserId(this)
             val date = viewModel.getFormattedDate()
             val time = viewModel.getFormattedTime()
             val lat = viewModel.latitude.value ?: 0.0
@@ -115,9 +120,20 @@ class ObservationPlanningActivity : BaseActivity() {
         }
     }
 
-    private fun getCurrentUserId(): Int {
-        // Заглушка — здесь должен быть ID авторизованного пользователя
-        return 1
+    companion object {
+        const val REQUEST_MAP_PICKER = 101
     }
+
+    // Запуск MapPickerActivity
+    private fun openMapPicker(currentLat: Double, currentLon: Double) {
+        val intent = Intent(this, MapPickerActivity::class.java).apply {
+            putExtra("current_lat", currentLat)
+            putExtra("current_lon", currentLon)
+        }
+        startActivityForResult(intent, REQUEST_MAP_PICKER)
+    }
+
+
+
 }
 

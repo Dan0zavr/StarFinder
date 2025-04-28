@@ -9,18 +9,17 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.starfinder.databinding.ActivityBaseBinding
 import com.example.starfinder.databinding.HistoryBinding
 import com.example.starfinder.models.CelestialBody
 import com.example.starfinder.models.Observation
 import com.example.starfinder.services.DataService
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class ObservationHistoryActivity : BaseActivity() {
-    private lateinit var binding: HistoryBinding // Используйте правильное имя Binding
+    private lateinit var binding: HistoryBinding
     private lateinit var dataService: DataService
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,7 +27,7 @@ class ObservationHistoryActivity : BaseActivity() {
         binding = HistoryBinding.inflate(layoutInflater)
         baseBinding.contentFrame.addView(binding.root)
 
-        setToolbarTitle("История наблюдений") // Можно установить заголовок
+        setToolbarTitle("История наблюдений")
 
         dataService = DataService(applicationContext).also {
             if (!it.checkDatabase()) {
@@ -39,29 +38,35 @@ class ObservationHistoryActivity : BaseActivity() {
         }
         testDatabaseContents()
 
-        val userId = getSharedPreferences("user_prefs", MODE_PRIVATE)
-            .getInt("UserId", -1)
+        val userId = getCurrentUserId()
+        if (userId == -1) return
 
-        if (userId == -1) {
+        loadObservations(userId)
+
+    }
+
+    private fun getCurrentUserId(): Int {
+        return UserSession.getCurrentUserId(this).takeIf { it != -1 } ?: run {
             showError("Требуется авторизация")
             Handler(Looper.getMainLooper()).postDelayed({
                 startActivity(Intent(this, LoginActivity::class.java))
                 finish()
             }, 2000)
-            return
+            -1
         }
-
-        loadObservations(userId)
-
-
     }
-
 
     private fun loadObservations(userId: Int) {
         try {
-            Log.d("DEBUG", "Загружаем наблюдения для userId = $userId")
-            val observations = dataService.getWithQuery("SELECT * FROM Observation WHERE UserId = ?", arrayOf(userId.toString())) {
-                    cursor ->
+            val currentDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                .format(Date()) // Текущая дата и время
+
+            Log.d("DEBUG", "Загружаем наблюдения для userId = $userId до $currentDateTime")
+
+            val observations = dataService.getWithQuery(
+                "SELECT * FROM Observation WHERE UserId = ? AND ObservationDateTime < ? ORDER BY ObservationDateTime DESC",
+                arrayOf(userId.toString(), currentDateTime)
+            ) { cursor ->
                 Observation(
                     observationId = cursor.getInt(cursor.getColumnIndexOrThrow("ObservationId")),
                     observationDateTime = cursor.getString(cursor.getColumnIndexOrThrow("ObservationDateTime")),
@@ -70,15 +75,16 @@ class ObservationHistoryActivity : BaseActivity() {
                     userId = cursor.getInt(cursor.getColumnIndexOrThrow("UserId"))
                 )
             }
-            Log.d("DEBUG", "Количество загруженных наблюдений: ${observations.size}")
+
             if (observations.isEmpty()) {
                 showEmptyState()
             } else {
                 setupRecyclerView(observations)
                 binding.emptyHistoryView.visibility = View.GONE
-                binding.observationHistoryRecyclerView.visibility = View.VISIBLE
+                binding.historyRecyclerView.visibility = View.VISIBLE
                 Log.d("DEBUG", "Загружено")
             }
+
         } catch (e: Exception) {
             Log.e("LOAD_ERROR", "Error loading observations", e)
             showError("Ошибка загрузки данных")
@@ -88,7 +94,7 @@ class ObservationHistoryActivity : BaseActivity() {
     private fun testDatabaseContents() {
         try {
             val allObservations = dataService.getWithQuery(
-                "SELECT * FROM Observation", // без WHERE!
+                "SELECT * FROM Observation",
                 emptyArray()
             ) { cursor ->
                 Observation(
@@ -110,9 +116,17 @@ class ObservationHistoryActivity : BaseActivity() {
     }
 
     private fun setupRecyclerView(observations: List<Observation>) {
-        binding.observationHistoryRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@ObservationHistoryActivity)
-            adapter = ObservationAdapter(observations, dataService)
+        binding.historyRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@ObservationHistoryActivity) // Важно!
+            adapter = ObservationAdapter(
+                items = observations,
+                dataService = dataService,
+                itemLayoutRes = R.layout.item_observation
+            ).apply {
+                onItemClick = { observation ->
+//                    showObservationDetails(observation)
+                }
+            }
         }
     }
 
@@ -124,47 +138,7 @@ class ObservationHistoryActivity : BaseActivity() {
     private fun showError(message: String) {
         binding.emptyHistoryView.text = message
         binding.emptyHistoryView.visibility = View.VISIBLE
-        binding.observationHistoryRecyclerView.visibility = View.GONE
+        binding.historyRecyclerView.visibility = View.GONE
     }
 
-
-    private fun showObservationDetails(observation: Observation) {
-        // Получаем связанные небесные тела для этого наблюдения
-        val celestialBodies =
-            dataService.getCelestialBodiesForObservation(observation.observationId)
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Детали наблюдения")
-            .setMessage(buildDetailsMessage(observation, celestialBodies))
-            .setPositiveButton("OK", null)
-            .create()
-        dialog.show()
-    }
-
-    private fun buildDetailsMessage(
-        observation: Observation,
-        celestialBodies: List<CelestialBody>
-    ): String {
-        return """
-            ${formatDateTime(observation.observationDateTime)}
-            ${observation.observationLatitude?.toString() ?: "N/A"}, 
-                      ${observation.observationLongitude?.toString() ?: "N/A"}
-            
-            Наблюдаемый объекты:
-            ${celestialBodies.joinToString("\n") { "• ${it.celestialBodyName}" }}
-        """.trimIndent()
-    }
-
-    private fun formatDateTime(dateTime: String): String {
-        return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
-            val date = inputFormat.parse(dateTime)
-            outputFormat.format(date)
-        } catch (e: Exception) {
-            dateTime
-        }
-
-
-    }
 }

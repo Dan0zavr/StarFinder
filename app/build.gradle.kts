@@ -1,4 +1,5 @@
 import org.gradle.kotlin.dsl.testImplementation
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -11,7 +12,15 @@ java{
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+val mapsApiKey = localProperties.getProperty("MAPS_API_KEY", "")
+
 android {
+
     namespace = "com.example.starfinder"
     compileSdk = 35
 
@@ -21,6 +30,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -31,6 +41,13 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            buildConfigField("String", "MAPS_API_KEY", "\"${properties["MAPS_API_KEY"]}\"")
+        }
+        getByName("release") {
+            buildConfigField("String", "MAPS_API_KEY", "\"${properties["MAPS_API_KEY"]}\"")
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -39,6 +56,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -81,9 +99,11 @@ dependencies {
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
-    testImplementation ("org.junit.jupiter:jupit-jupiter:5.8.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
     testImplementation("prg.mockito:mockito-core:4.0.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
     testImplementation(kotlin("test"))
     implementation(kotlin("reflect"))
+    implementation("com.yandex.android:maps.mobile:4.5.1-full")
+}
 }

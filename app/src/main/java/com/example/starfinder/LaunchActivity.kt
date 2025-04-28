@@ -13,18 +13,11 @@ class LaunchActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//        copyDatabaseFromAssets(this)
 
-        copyDatabaseFromAssets(this)
         ApiManager.init(this)
 
-        val sharedPref = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-
-
-        // Исправлено имя переменной (было sharedPrefs, должно быть sharedPref)
-        val isLoggedIn = sharedPref.getBoolean("isLoggedIn", false)
-        val userId = sharedPref.getInt("UserId", -1) // Добавлено получение userId
-
-        val destination = if (isLoggedIn && userId != -1) { // Проверяем и isLoggedIn и userId
+        val destination = if (UserSession.isLoggedIn(this)) {
             MainActivity::class.java
         } else {
             LoginActivity::class.java
@@ -34,4 +27,6 @@ class LaunchActivity : AppCompatActivity() {
         finish()
     }
 }
+
+
 
