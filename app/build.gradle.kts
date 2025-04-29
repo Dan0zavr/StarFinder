@@ -12,17 +12,12 @@ java{
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-val localPropertiesFile = rootProject.file("local.properties")
-val localProperties = Properties()
-if (localPropertiesFile.exists()) {
-    localProperties.load(localPropertiesFile.inputStream())
-}
-val mapsApiKey = localProperties.getProperty("MAPS_API_KEY", "")
 
 android {
-
     namespace = "com.example.starfinder"
     compileSdk = 35
+
+
 
     defaultConfig {
         applicationId = "com.example.starfinder"
@@ -30,9 +25,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures {
         viewBinding = true
@@ -41,13 +34,7 @@ android {
     }
 
     buildTypes {
-        getByName("debug") {
-            buildConfigField("String", "MAPS_API_KEY", "\"${properties["MAPS_API_KEY"]}\"")
-        }
-        getByName("release") {
-            buildConfigField("String", "MAPS_API_KEY", "\"${properties["MAPS_API_KEY"]}\"")
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -104,6 +91,4 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
     testImplementation(kotlin("test"))
     implementation(kotlin("reflect"))
-    implementation("com.yandex.android:maps.mobile:4.5.1-full")
-}
 }

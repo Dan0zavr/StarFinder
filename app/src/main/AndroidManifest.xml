@@ -3,10 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.starfinder">
 
-    <meta-data
-        android:name="com.yandex.maps.api.v2.apikey"
-        android:value="${MAPS_API_KEY}" />
-
     <!-- Разрешения для камеры и местоположения -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -36,7 +32,6 @@
         <activity android:name=".ObservationHistoryActivity" android:exported="true" />
         <activity android:name=".ObservationPlanningActivity" android:exported="true"/>
         <activity android:name=".StarSelectionActivity" android:exported="true"/>
-        <activity android:name=".MapPickerActivity" android:exported="true"/>
         <activity android:name=".PlansActivity" android:exported="true"/>
 
         <!-- Основная активность приложения -->

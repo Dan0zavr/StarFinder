@@ -30,7 +30,7 @@ class AuthViewModel(private val dataService: DataService) : ViewModel() {
                     -1L
                 } else {
                     val user = User(
-                        userId = 0,
+                        userId = null,
                         userName = username,
                         email = email,
                         password = password

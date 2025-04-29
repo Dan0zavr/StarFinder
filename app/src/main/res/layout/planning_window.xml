@@ -2,130 +2,129 @@
 <androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black_500"
-    tools:context=".ObservationPlanningActivity">
+    android:background="@color/black_500">
 
-    <!-- Вертикальный контейнер: тулбар + прокручиваемый контент -->
+    <!-- Основной контент -->
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <!-- 1. Включаем наш тулбар -->
+        <!-- Тулбар -->
         <include layout="@layout/toolbar_layout"/>
 
-        <!-- 2. Основной контент в ScrollView -->
-        <androidx.core.widget.NestedScrollView
+        <FrameLayout
+            android:id="@+id/content_frame"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fillViewport="true">
+            android:layout_height="match_parent"
+            android:background="@color/black_500">
+        <!-- Основной контент -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <!-- Строка поиска -->
+            <EditText
+                android:id="@+id/searchCelestialBody"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:hint="Найти небесное тело"
+                android:textColorHint="@color/white"
+                android:inputType="text"
+                android:textColor="@color/white"
+                android:focusable="false"
+                android:clickable="true"/>
 
-                <EditText
-                    android:id="@+id/searchCelestialBody"
-                    android:layout_width="0dp"
+            <!-- Основной контент -->
+            <LinearLayout
+                android:id="@+id/mainContent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/searchCelestialBody"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp">
+
+                <!-- Координаты -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@android:drawable/ic_menu_search"
-                    android:hint="Найти небесное тело"
-                    android:inputType="text"
-                    android:textColor="@color/white"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/selectedCoordinatesText"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Координаты: не выбраны"
-                    android:textColor="@color/white"
-                    app:layout_constraintTop_toBottomOf="@id/searchCelestialBody"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    <EditText
+                        android:id="@+id/latitudeEdit"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Широта"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="@color/white"
+                        android:textColorHint="@color/white"
+                        android:layout_marginEnd="4dp"/>
 
-                <Button
-                    android:id="@+id/selectCoordinatesButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Выбрать координаты на карте"
-                    app:layout_constraintTop_toBottomOf="@id/selectedCoordinatesText"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    <EditText
+                        android:id="@+id/longitudeEdit"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Долгота"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:textColor="@color/white"
+                        android:textColorHint="@color/white"
+                        android:layout_marginStart="4dp"/>
+                </LinearLayout>
 
+                <!-- Дата и время -->
                 <TextView
                     android:id="@+id/selectedDateText"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="16dp"
                     android:text="Дата: не выбрана"
-                    android:textColor="@color/white"
-                    app:layout_constraintTop_toBottomOf="@id/selectCoordinatesButton"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    android:textColor="@color/white" />
 
                 <Button
                     android:id="@+id/selectDateButton"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Выбрать дату"
-                    app:layout_constraintTop_toBottomOf="@id/selectedDateText"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    android:text="Выбрать дату" />
 
                 <TextView
                     android:id="@+id/selectedTimeText"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="16dp"
                     android:text="Время: не выбрано"
-                    android:textColor="@color/white"
-                    app:layout_constraintTop_toBottomOf="@id/selectDateButton"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    android:textColor="@color/white" />
 
                 <Button
                     android:id="@+id/selectTimeButton"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Выбрать время"
-                    app:layout_constraintTop_toBottomOf="@id/selectedTimeText"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
+                    android:text="Выбрать время" />
+            </LinearLayout>
 
-                <Button
-                    android:id="@+id/saveObservationButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Сохранить"
-                    app:layout_constraintTop_toBottomOf="@id/selectTimeButton"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"/>
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.core.widget.NestedScrollView>
-
+            <Button
+                android:id="@+id/saveObservationButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:text="Сохранить наблюдение" />
+        </RelativeLayout>
+        </FrameLayout>
     </LinearLayout>
 
-    <!-- 3. Навигационное меню -->
+    <!-- Навигационное меню -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/navigationView"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:menu="@menu/drawer_menu" />
-
+        app:menu="@menu/drawer_menu"/>
 </androidx.drawerlayout.widget.DrawerLayout>

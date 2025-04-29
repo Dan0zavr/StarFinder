@@ -122,11 +122,7 @@ class ObservationHistoryActivity : BaseActivity() {
                 items = observations,
                 dataService = dataService,
                 itemLayoutRes = R.layout.item_observation
-            ).apply {
-                onItemClick = { observation ->
-//                    showObservationDetails(observation)
-                }
-            }
+            )
         }
     }
 

@@ -6,11 +6,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.starfinder.models.CelestialBody
-import com.example.starfinder.models.CelestialBodyInObservation
 import com.example.starfinder.models.Observation
 import com.example.starfinder.services.DataService
-import java.security.PrivateKey
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -21,7 +18,7 @@ class ObservationAdapter(
 ) : RecyclerView.Adapter<ObservationAdapter.ViewHolder>() {
 
     // Callback для кликов
-    var onItemClick: ((Observation) -> Unit)? = null
+    var onViewClick: ((Observation) -> Unit)? = null
     var onDeleteClick: ((Observation) -> Unit)? = null
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -29,7 +26,8 @@ class ObservationAdapter(
         val date: TextView = view.findViewById(R.id.observationDate)
         val time: TextView = view.findViewById(R.id.observationTime)
         val coordinates: TextView = view.findViewById(R.id.observationCoordinates)
-        val btnDelete: Button? = view.findViewById(R.id.btnDelete) // Опционально
+        val btnDelete: Button? = view.findViewById(R.id.btnDelete)
+        val btnView: Button? = view.findViewById(R.id.btnView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -49,8 +47,8 @@ class ObservationAdapter(
         holder.coordinates.text = "Ш: ${observation.observationLatitude?.toString() ?: "N/A"}, Д: ${observation.observationLongitude?.toString() ?: "N/A"}"
 
         // Обработка кликов
-        holder.itemView.setOnClickListener {
-            onItemClick?.invoke(observation)
+        holder.btnView?.setOnClickListener {
+            onViewClick?.invoke(observation)
         }
 
         // Кнопка удаления (если есть в layout)

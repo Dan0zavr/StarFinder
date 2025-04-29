@@ -12,7 +12,7 @@ import com.example.starfinder.models.StarInfo
 
 class StarAdapter(
     private val context: Context,
-    private val stars: List<StarInfo>
+    private var stars: List<StarInfo>
 ) : BaseAdapter() {
 
     private var itemClickListener: ((StarInfo) -> Unit)? = null
@@ -41,5 +41,15 @@ class StarAdapter(
         }
 
         return view
+    }
+
+    fun clear() {
+        stars = emptyList()
+        notifyDataSetChanged()
+    }
+
+    fun addAll(newStars: List<StarInfo>) {
+        stars = newStars
+        notifyDataSetChanged()
     }
 }

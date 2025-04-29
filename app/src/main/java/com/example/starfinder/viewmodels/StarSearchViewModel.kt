@@ -112,6 +112,42 @@ class StarSearchViewModel(service: DataService) : ViewModel() {
             .toList()
     }
 
+    fun getOrCreateStar(starInfo: StarInfo, callback: (CelestialBody) -> Unit) {
+        viewModelScope.launch {
+            // Проверяем существует ли звезда
+            val existingStar = dataService.getWithQuery(
+                "SELECT * FROM CelestialBody WHERE CelestialBodyName = ?",
+                arrayOf(starInfo.name)
+            ) { cursor ->
+                CelestialBody(
+                    celestialBodyId = cursor.getInt(cursor.getColumnIndexOrThrow("CelestialBodyId")),
+                    celestialBodyName = cursor.getString(cursor.getColumnIndexOrThrow("CelestialBodyName")),
+                    ascension = cursor.getDouble(cursor.getColumnIndexOrThrow("Ascension")),
+                    deflection = cursor.getDouble(cursor.getColumnIndexOrThrow("Deflection")),
+                    dataSourceId = cursor.getInt(cursor.getColumnIndexOrThrow("DataSourceId"))
+                )
+            }.firstOrNull()
+
+
+            if (existingStar != null) {
+                callback(existingStar)
+            } else {
+                // Создаем новую звезду
+                val newStar = CelestialBody(
+                    celestialBodyId = null,
+                    celestialBodyName = starInfo.name,
+                    deflection = starInfo.dec,
+                    ascension = starInfo.ra,
+                    dataSourceId = starInfo.dataSourceId
+                )
+                val starId = dataService.insert("CelestialBody", newStar)
+                if (starId != -1L) {
+                    callback(newStar.copy(celestialBodyId = starId.toInt()))
+                }
+            }
+        }
+    }
+
     private fun hmsToDegrees(hms: String): Double? {
         return try {
             val parts = hms.split(" ")

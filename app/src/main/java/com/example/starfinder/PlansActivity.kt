@@ -6,10 +6,8 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.starfinder.ObservationHistoryActivity
 import com.example.starfinder.UserSession.getCurrentUserId
 import com.example.starfinder.databinding.ActivityPlansBinding
-import com.example.starfinder.databinding.HistoryBinding
 import com.example.starfinder.models.Observation
 import com.example.starfinder.services.DataService
 import java.text.SimpleDateFormat
@@ -19,6 +17,7 @@ import java.util.Locale
 class PlansActivity : BaseActivity() {
     private lateinit var binding: ActivityPlansBinding
     private lateinit var dataService: DataService
+    private var userId: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,14 +36,14 @@ class PlansActivity : BaseActivity() {
         }
 
 
-        val userId = getCurrentUserId(this)
+        userId = getCurrentUserId(this)
         if (userId == -1) return
 
         loadObservations(userId)
 
     }
 
-    private fun loadObservations(userId: Int) {
+    private fun loadObservations(userId: Int?) {
         try {
             val currentDateTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
                 .format(Date()) // Текущая дата и время
@@ -87,7 +86,7 @@ class PlansActivity : BaseActivity() {
                 dataService = dataService,
                 itemLayoutRes = R.layout.item_plan
             ).apply {
-                onItemClick = { plan ->
+                onViewClick = { plan ->
 //                    showPlanDetails(plan)
                 }
 
@@ -96,7 +95,8 @@ class PlansActivity : BaseActivity() {
                         .setTitle("Удаление")
                         .setMessage("Удалить план наблюдения за ${dataService.getStarNameByObservation(plan.observationId)}?")
                         .setPositiveButton("Удалить") { _, _ ->
-//                            deletePlan(plan.observationId)
+                           dataService.delete("Observation", "ObservationId = ?", arrayOf("${plan.observationId}"))
+                            loadObservations(userId)
                         }
                         .setNegativeButton("Отмена", null)
                         .show()
